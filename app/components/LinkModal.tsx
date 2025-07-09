@@ -1,13 +1,28 @@
 import React, { useState } from 'react';
+import { getAuth } from 'firebase/auth';
 
 export default function LinkModal({ onClose }: { onClose: () => void }) {
   const [copied, setCopied] = useState(false);
-  const link = 'https://linktr.ee/youngchankim';
+  let userLink = '';
+  let displayLink = '';
+  if (typeof window !== 'undefined') {
+    const auth = getAuth();
+    const uid = auth.currentUser?.uid;
+    if (uid) {
+      userLink = `https://www.ninepics.com/${uid}`;
+      displayLink = `ninepics.com/${uid}`;
+      if (displayLink.length > 18) {
+        displayLink = displayLink.substring(0, 18) + '...';
+      }
+    }
+  }
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(link);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    if (userLink) {
+      navigator.clipboard.writeText(userLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }
   };
 
   return (
@@ -30,10 +45,11 @@ export default function LinkModal({ onClose }: { onClose: () => void }) {
               </g>
             </svg>
           </span>
-          <span className="text-lg font-inconsolata text-black">linktr.ee/youngchankim</span>
+          <span className="text-lg font-inconsolata text-black">{displayLink || '로그인 필요'}</span>
           <button
             className="ml-4 px-3 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-primary font-semibold text-base focus:outline-none"
             onClick={handleCopy}
+            disabled={!userLink}
           >
             {copied ? 'Copied!' : 'Copy'}
           </button>

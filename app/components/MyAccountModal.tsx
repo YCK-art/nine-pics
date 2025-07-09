@@ -6,13 +6,26 @@ import { User, Link as LinkIcon } from 'lucide-react'
 
 export default function MyAccountModal({ email, onClose, onLogout }: { email: string, onClose: () => void, onLogout: () => void }) {
   const [copied, setCopied] = useState(false)
-  const username = email ? email.split('@')[0] : 'user'
-  const shareLink = typeof window !== 'undefined' ? window.location.origin + '/user/' + username : ''
+  let userLink = '';
+  let displayLink = '';
+  if (typeof window !== 'undefined') {
+    const auth = getAuth();
+    const uid = auth.currentUser?.uid;
+    if (uid) {
+      userLink = `https://www.ninepics.com/${uid}`;
+      displayLink = `ninepics.com/${uid}`;
+      if (displayLink.length > 18) {
+        displayLink = displayLink.substring(0, 18) + '...';
+      }
+    }
+  }
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(shareLink)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1200)
+    if (userLink) {
+      navigator.clipboard.writeText(userLink)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1200)
+    }
   }
 
   const handleLogout = async () => {
@@ -35,8 +48,8 @@ export default function MyAccountModal({ email, onClose, onLogout }: { email: st
           <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center mb-4">
             <User className="w-14 h-14 text-gray-400" />
           </div>
-          <div className="text-2xl font-bold text-black font-inconsolata mb-1">@{username}</div>
-          <div className="text-gray-500 text-sm font-inconsolata mb-6">/{username}</div>
+          <div className="text-2xl font-bold text-black font-inconsolata mb-1">@{email ? email.split('@')[0] : 'user'}</div>
+          <div className="text-gray-500 text-sm font-inconsolata mb-6">/{email ? email.split('@')[0] : 'user'}</div>
         </div>
         <div className="w-full flex items-center justify-center gap-4 border-t border-gray-200 px-8 py-6 bg-gray-50 rounded-b-[48px]">
           <button
@@ -48,6 +61,7 @@ export default function MyAccountModal({ email, onClose, onLogout }: { email: st
           <button
             className="flex-1 py-3 rounded-full bg-gray-200 text-black font-semibold font-inconsolata text-base hover:bg-gray-300 transition-colors flex items-center justify-center gap-2"
             onClick={handleCopy}
+            disabled={!userLink}
           >
             <LinkIcon className="w-5 h-5" />
             {copied ? 'Copied!' : 'Copy Link'}
