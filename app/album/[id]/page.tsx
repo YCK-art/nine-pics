@@ -186,9 +186,6 @@ export default function AlbumPage({ params }: { params: { id: string } }) {
         <ViewsModal
           totalViews={totalViews}
           daysSinceCreated={daysSinceCreated}
-          last7DaysViews={last7DaysViews}
-          mostActiveDay={mostActiveDay}
-          mostActiveCount={mostActiveCount}
           onClose={() => setShowViewsModal(false)}
         />
       )}
