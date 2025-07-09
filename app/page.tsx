@@ -83,6 +83,8 @@ export default function Home() {
     setTimeout(() => setShowLoginToast(false), 2000);
   };
   const [showViewsModal, setShowViewsModal] = useState(false);
+  const [shakeIndex, setShakeIndex] = useState<number|null>(null);
+  const [albumMeta, setAlbumMeta] = useState<{ totalViews: number, createdAt: string | null }>({ totalViews: 0, createdAt: null });
 
   // Firebase Auth 상태 감지
   React.useEffect(() => {
@@ -157,21 +159,28 @@ export default function Home() {
     }
   }, [isLoggedIn]);
 
-  // Firestore에서 사용자별 앨범 데이터 불러오기 (실시간 반영)
+  // Firestore에서 사용자별 앨범 데이터 및 메타 정보 구독
   React.useEffect(() => {
     if (!isLoggedIn || !albumId) return;
-    
     const albumRef = doc(db, 'albums', albumId);
     const unsubscribe = onSnapshot(albumRef, (snap) => {
       if (snap.exists()) {
         const data = snap.data();
         setPhotos((data.photos || []).slice(0, getUnlockedSlots()));
+        setAlbumMeta({
+          totalViews: data.totalViews || data.viewCount || 0,
+          createdAt: data.createdAt || null,
+        });
       } else {
         setPhotos([]);
+        setAlbumMeta({ totalViews: 0, createdAt: null });
       }
     });
     return () => unsubscribe();
   }, [albumId, viewCount, isLoggedIn]);
+
+  // daysSinceCreated 계산
+  const daysSinceCreated = albumMeta.createdAt ? Math.max(1, Math.ceil((Date.now() - new Date(albumMeta.createdAt).getTime()) / (1000 * 60 * 60 * 24))) : 1;
 
   // 사진 업로드 함수 리팩토링 (사용자별 앨범 관리 + 슬롯 교체)
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -292,7 +301,7 @@ export default function Home() {
 
   const shareAlbum = () => {
     if (albumId) {
-      const shareUrl = `${window.location.origin}/album/${albumId}`
+      const shareUrl = `https://www.ninepics.com/album/${albumId}`;
       navigator.clipboard.writeText(shareUrl)
       alert('앨범 링크가 클립보드에 복사되었습니다!')
     }
@@ -305,7 +314,8 @@ export default function Home() {
     console.log('fileInputRef 상태:', fileInputRef.current)
     
     if (!isUnlocked) {
-      console.log('잠긴 슬롯이므로 클릭 무시')
+      setShakeIndex(slotIndex);
+      setTimeout(() => setShakeIndex(null), 400);
       return
     }
     
@@ -448,11 +458,8 @@ export default function Home() {
       {/* 기존 showLoginModal 모달 제거 */}
       {showViewsModal && (
         <ViewsModal
-          totalViews={1234}
-          daysSinceCreated={12}
-          last7DaysViews={56}
-          mostActiveDay={"2024-07-10"}
-          mostActiveCount={20}
+          totalViews={albumMeta.totalViews}
+          daysSinceCreated={daysSinceCreated}
           onClose={() => setShowViewsModal(false)}
         />
       )}
@@ -480,6 +487,7 @@ export default function Home() {
                         ? ''
                         : 'opacity-50 cursor-default'
                       : ''}
+                    ${shakeIndex === index ? 'shake' : ''}
                   `}
                   onClick={() => handleFrameClick(isUnlocked, index)}
                   onMouseEnter={e => {
@@ -562,7 +570,7 @@ export default function Home() {
               Share Album
             </button>
             <p className="text-sm text-gray-400 mt-2 font-inconsolata">
-              Link: {`${typeof window !== 'undefined' ? window.location.origin : ''}/album/${albumId}`}
+              Link: {`https://www.ninepics.com/album/${albumId}`}
             </p>
           </div>
         )}

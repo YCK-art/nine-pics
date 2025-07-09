@@ -2,7 +2,9 @@
   {
     "origin": [
       "http://localhost:3000",
-      "https://nine-pics.vercel.app"
+      "https://nine-pics.vercel.app",
+      "https://www.ninepics.com",
+      "https://ninepics.com"
     ],
     "responseHeader": ["Content-Type"],
     "method": ["GET", "POST", "PUT", "DELETE"],
