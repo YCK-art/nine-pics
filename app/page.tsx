@@ -7,6 +7,7 @@ import { getFirestore, collection, getDocs, query, where, doc, getDoc, onSnapsho
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
 import { initializeApp, getApps } from 'firebase/app'
+import ViewsModal from './components/ViewsModal';
 
 interface Photo {
   id: string
@@ -76,6 +77,12 @@ export default function Home() {
   const [userPercentile, setUserPercentile] = useState<number>(0)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [progress, setProgress] = useState(0);
+  const [showLoginToast, setShowLoginToast] = useState(false);
+  const showLoginToastMessage = () => {
+    setShowLoginToast(true);
+    setTimeout(() => setShowLoginToast(false), 2000);
+  };
+  const [showViewsModal, setShowViewsModal] = useState(false);
 
   // Firebase Auth 상태 감지
   React.useEffect(() => {
@@ -135,44 +142,74 @@ export default function Home() {
     return () => unsubscribe()
   }, [])
 
-  // Firestore에서 앨범 데이터 불러오기 (실시간 반영)
+  // 사용자별 앨범 ID 관리
   React.useEffect(() => {
-    if (!albumId) return;
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+    
+    if (currentUser) {
+      // 사용자별 고유 앨범 ID 생성
+      const userAlbumId = `user-${currentUser.uid}`;
+      setAlbumId(userAlbumId);
+    } else {
+      setAlbumId('');
+      setPhotos([]);
+    }
+  }, [isLoggedIn]);
+
+  // Firestore에서 사용자별 앨범 데이터 불러오기 (실시간 반영)
+  React.useEffect(() => {
+    if (!isLoggedIn || !albumId) return;
+    
     const albumRef = doc(db, 'albums', albumId);
     const unsubscribe = onSnapshot(albumRef, (snap) => {
       if (snap.exists()) {
         const data = snap.data();
         setPhotos((data.photos || []).slice(0, getUnlockedSlots()));
+      } else {
+        setPhotos([]);
       }
     });
     return () => unsubscribe();
-  }, [albumId, viewCount]);
+  }, [albumId, viewCount, isLoggedIn]);
 
-  // 사진 업로드 함수 리팩토링 (uploadBytesResumable 사용)
+  // 사진 업로드 함수 리팩토링 (사용자별 앨범 관리 + 슬롯 교체)
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+
+    console.log('업로드 시작 - setIsUploading(true)');
     setIsUploading(true);
 
     try {
       const storage = getStorage();
-      let currentAlbumId = albumId;
-      if (!currentAlbumId) {
-        currentAlbumId = `album-${Date.now()}`;
-        setAlbumId(currentAlbumId);
-      }
-      const albumRef = doc(db, 'albums', currentAlbumId);
+      const userAlbumId = `user-${currentUser.uid}`;
+      const albumRef = doc(db, 'albums', userAlbumId);
       const albumSnap = await getDoc(albumRef);
       let existingPhotos = albumSnap.exists() ? (albumSnap.data().photos || []) : [];
-      const availableSlots = getUnlockedSlots() - existingPhotos.length;
-      const filesArr = Array.from(files).slice(0, availableSlots);
-      const uploadPromises = filesArr.map((file, idx) => {
-        return new Promise((resolve, reject) => {
-          const safeFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-          const storageRef = ref(storage, `albums/${currentAlbumId}/${safeFileName}`);
-          const metadata = { contentType: file.type };
-          const uploadTask = uploadBytesResumable(storageRef, file, metadata);
+      
+      // 클릭된 슬롯 인덱스 확인
+      const clickedSlotIndex = (window as any).clickedSlotIndex;
+      const isReplacingSlot = clickedSlotIndex !== undefined && clickedSlotIndex < getUnlockedSlots();
+      
+      let updatedPhotos;
+      
+      if (isReplacingSlot && files.length > 0) {
+        // 특정 슬롯 교체 - 단일 파일만 처리
+        const file = files[0];
+        const safeFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const storageRef = ref(storage, `albums/${userAlbumId}/${safeFileName}`);
+        const metadata = { contentType: file.type };
+        const uploadTask = uploadBytesResumable(storageRef, file, metadata);
+        
+        const uploadedPhoto = await new Promise((resolve, reject) => {
           uploadTask.on(
             'state_changed',
             null,
@@ -180,24 +217,57 @@ export default function Home() {
             async () => {
               const url = await getDownloadURL(storageRef);
               resolve({
-                id: `photo-${Date.now()}-${idx}`,
+                id: `photo-${Date.now()}`,
                 url,
                 alt: file.name,
               });
             }
           );
         });
-      });
-      const uploadedPhotos = await Promise.all(uploadPromises);
-      if (uploadedPhotos.length > 0) {
-        const updatedPhotos = [...existingPhotos, ...uploadedPhotos].slice(0, getUnlockedSlots());
+        
+        // 해당 슬롯에 사진 교체
+        existingPhotos[clickedSlotIndex] = uploadedPhoto as any;
+        updatedPhotos = existingPhotos.slice(0, getUnlockedSlots());
+      } else {
+        // 빈 슬롯에 추가 - 단일 파일만 처리
+        if (files.length > 0) {
+          const file = files[0];
+          const safeFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+          const storageRef = ref(storage, `albums/${userAlbumId}/${safeFileName}`);
+          const metadata = { contentType: file.type };
+          const uploadTask = uploadBytesResumable(storageRef, file, metadata);
+          
+          const uploadedPhoto = await new Promise((resolve, reject) => {
+            uploadTask.on(
+              'state_changed',
+              null,
+              (error) => reject(error),
+              async () => {
+                const url = await getDownloadURL(storageRef);
+                resolve({
+                  id: `photo-${Date.now()}`,
+                  url,
+                  alt: file.name,
+                });
+              }
+            );
+          });
+          
+          updatedPhotos = [...existingPhotos, uploadedPhoto].slice(0, getUnlockedSlots());
+        } else {
+          updatedPhotos = existingPhotos;
+        }
+      }
+      
+      if (updatedPhotos.length > 0) {
         if (!albumSnap.exists()) {
           await setDoc(albumRef, {
-            id: currentAlbumId,
+            id: userAlbumId,
             photos: updatedPhotos,
             viewCount: 0,
             createdAt: new Date().toISOString(),
-            userId: getAuth().currentUser?.uid || '',
+            userId: currentUser.uid,
+            userEmail: currentUser.email,
           });
         } else {
           await updateDoc(albumRef, { photos: updatedPhotos });
@@ -208,8 +278,11 @@ export default function Home() {
       console.error('업로드 실패:', err);
       alert('업로드 실패: ' + (err?.message || err));
     } finally {
+      console.log('업로드 완료 - setIsUploading(false)');
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
+      // 클릭된 슬롯 인덱스 초기화
+      (window as any).clickedSlotIndex = undefined;
     }
   };
 
@@ -226,8 +299,8 @@ export default function Home() {
   }
 
   // 프레임 클릭 시 파일 업로드 input 트리거
-  const handleFrameClick = (isUnlocked: boolean) => {
-    console.log('프레임 클릭됨, 해제됨:', isUnlocked)
+  const handleFrameClick = (isUnlocked: boolean, slotIndex: number) => {
+    console.log('프레임 클릭됨, 해제됨:', isUnlocked, '슬롯 인덱스:', slotIndex)
     console.log('isUploading 상태:', isUploading)
     console.log('fileInputRef 상태:', fileInputRef.current)
     
@@ -242,33 +315,21 @@ export default function Home() {
     console.log('클릭 시 사용자:', currentUser?.email)
     
     if (!currentUser) {
-      alert('사진을 업로드하려면 로그인이 필요합니다.')
-      return
+      showLoginToastMessage();
+      return;
     }
     
-    // isUploading 상태 강제로 false로 설정 (디버깅용)
     if (isUploading) {
-      console.log('업로드 중이므로 강제로 false로 설정')
-      setIsUploading(false)
+      console.log('업로드 중이므로 클릭 무시')
+      return;
     }
+    
+    // 클릭된 슬롯 인덱스를 전역 변수로 저장
+    (window as any).clickedSlotIndex = slotIndex;
     
     if (fileInputRef.current) {
       console.log('파일 input 클릭 트리거')
-      // 파일 input을 직접 표시하여 사용자가 선택할 수 있도록 함
-      fileInputRef.current.style.display = 'block'
-      fileInputRef.current.style.position = 'absolute'
-      fileInputRef.current.style.top = '50%'
-      fileInputRef.current.style.left = '50%'
-      fileInputRef.current.style.transform = 'translate(-50%, -50%)'
-      fileInputRef.current.style.zIndex = '1000'
       fileInputRef.current.click()
-      
-      // 3초 후 다시 숨김
-      setTimeout(() => {
-        if (fileInputRef.current) {
-          fileInputRef.current.style.display = 'none'
-        }
-      }, 3000)
     } else {
       console.log('파일 input이 null입니다')
       // fileInputRef가 null인 경우 강제로 input을 찾아서 클릭
@@ -290,17 +351,59 @@ export default function Home() {
     return 'Unlock at 50 views'
   }
 
-  // Slots 메뉴 클릭 핸들러 (layout에서 prop으로 받아야 하지만 데모용으로 window 이벤트 사용)
+  // Slots/Views/Link 메뉴 클릭 핸들러
   React.useEffect(() => {
     const handler = (e: any) => {
+      const auth = getAuth()
+      const currentUser = auth.currentUser
+      
+      if (!currentUser && ['slots', 'views', 'link'].includes(e.detail)) {
+        showLoginToastMessage();
+        return;
+      }
       if (e.detail === 'slots') setShowSlotsModal(true)
     }
     window.addEventListener('open-modal', handler)
     return () => window.removeEventListener('open-modal', handler)
   }, [])
 
+  // ViewsModal 전역 트리거
+  React.useEffect(() => {
+    const handler = (e: any) => {
+      const auth = getAuth()
+      const currentUser = auth.currentUser
+      
+      if (e.detail === 'views') {
+        if (!currentUser) {
+          showLoginToastMessage();
+          return;
+        }
+        setShowViewsModal(true);
+      }
+    };
+    window.addEventListener('open-modal', handler);
+    return () => window.removeEventListener('open-modal', handler);
+  }, []);
+
+  // 로그인 토스트 메시지 전역 트리거
+  React.useEffect(() => {
+    const handler = () => {
+      showLoginToastMessage();
+    };
+    window.addEventListener('show-login-toast', handler);
+    return () => window.removeEventListener('show-login-toast', handler);
+  }, []);
+
   return (
     <div className="min-h-screen bg-black">
+      {/* Toast 메시지 */}
+      {showLoginToast && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+          <div className="bg-black bg-opacity-70 text-white px-8 py-4 rounded-2xl text-lg font-inconsolata shadow-2xl animate-fadeinout transition-all duration-500">
+            You need to log in to perform this action.
+          </div>
+        </div>
+      )}
       {/* Slots 모달 */}
       {showSlotsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -341,7 +444,18 @@ export default function Home() {
           </div>
         </div>
       )}
-
+      {/* 로그인 필요 모달 */}
+      {/* 기존 showLoginModal 모달 제거 */}
+      {showViewsModal && (
+        <ViewsModal
+          totalViews={1234}
+          daysSinceCreated={12}
+          last7DaysViews={56}
+          mostActiveDay={"2024-07-10"}
+          mostActiveCount={20}
+          onClose={() => setShowViewsModal(false)}
+        />
+      )}
       <div className="container mx-auto px-4 py-8">
         {/* 사진 그리드 */}
         <div className="bg-black rounded-2xl shadow-lg p-6 mb-8">
@@ -367,7 +481,7 @@ export default function Home() {
                         : 'opacity-50 cursor-default'
                       : ''}
                   `}
-                  onClick={() => handleFrameClick(isUnlocked)}
+                  onClick={() => handleFrameClick(isUnlocked, index)}
                   onMouseEnter={e => {
                     if (isUnlocked) {
                       (e.currentTarget as HTMLDivElement).style.boxShadow = glow
@@ -395,10 +509,24 @@ export default function Home() {
                       </button>
                     </div>
                   ) : isUnlocked ? (
-                    <div className="text-center pointer-events-none">
-                      <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-500 font-inconsolata">Add Photo</p>
-                    </div>
+                    isUploading ? (
+                      <div className="text-center pointer-events-none">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+                        <p className="text-sm text-white font-inconsolata">
+                          Loading
+                          <span className="loading-dot">.</span>
+                          <span className="loading-dot">.</span>
+                          <span className="loading-dot">.</span>
+                        </p>
+                        {/* 디버깅용 */}
+                        <div className="text-xs text-white opacity-50">isUploading: {isUploading.toString()}</div>
+                      </div>
+                    ) : (
+                      <div className="text-center pointer-events-none">
+                        <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                        <p className="text-sm text-gray-500 font-inconsolata">Add Photo</p>
+                      </div>
+                    )
                   ) : (
                     <div className="text-center pointer-events-none">
                       <Eye className="w-8 h-8 text-gray-700 mx-auto mb-2" />
@@ -416,10 +544,10 @@ export default function Home() {
             ref={fileInputRef}
             type="file"
             accept="image/*"
-            multiple
             onChange={handleFileUpload}
             className="hidden"
             disabled={isUploading}
+            style={{ display: 'none' }}
           />
         </div>
 

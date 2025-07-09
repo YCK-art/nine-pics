@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import SignUpModal from './SignUpModal'
 import MyAccountModal from './MyAccountModal'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
+import LinkModal from './LinkModal';
 
 export default function Navbar({ onUserChanged }: { onUserChanged?: () => void } = {}) {
   const [showSignUp, setShowSignUp] = useState(false)
@@ -11,6 +12,7 @@ export default function Navbar({ onUserChanged }: { onUserChanged?: () => void }
   const [showAccount, setShowAccount] = useState(false)
   const [userEmail, setUserEmail] = useState('')
   const [modalType, setModalType] = useState<'signup' | 'login'>('signup')
+  const [showLinkModal, setShowLinkModal] = useState(false);
 
   // Firebase Auth 상태 감지
   useEffect(() => {
@@ -40,6 +42,16 @@ export default function Navbar({ onUserChanged }: { onUserChanged?: () => void }
     setUserEmail('')
   }
 
+  // Link 메뉴 클릭 핸들러
+  const handleLinkClick = () => {
+    if (!isLoggedIn) {
+      // 로그인 안내 메시지 표시
+      window.dispatchEvent(new CustomEvent('show-login-toast'));
+      return;
+    }
+    setShowLinkModal(true);
+  };
+
   return (
     <>
       <nav className="fixed top-0 left-0 w-full z-50 flex items-center justify-center min-w-0" style={{pointerEvents: 'none'}}>
@@ -55,8 +67,17 @@ export default function Navbar({ onUserChanged }: { onUserChanged?: () => void }
             >
               Slots
             </button>
-            <a href="#" className="hover:text-primary transition-colors whitespace-nowrap min-w-0 flex-shrink">Views</a>
-            <a href="#" className="hover:text-primary transition-colors whitespace-nowrap min-w-0 flex-shrink">Link</a>
+            <a
+              href="#"
+              className="hover:text-primary transition-colors whitespace-nowrap min-w-0 flex-shrink"
+              onClick={e => {
+                e.preventDefault();
+                window.dispatchEvent(new CustomEvent('open-modal', { detail: 'views' }));
+              }}
+            >
+              Views
+            </a>
+            <a href="#" className="hover:text-primary transition-colors whitespace-nowrap min-w-0 flex-shrink" onClick={handleLinkClick}>Link</a>
           </div>
           {/* 로그인/회원가입 or My Account */}
           <div className="flex items-center space-x-2 sm:space-x-4 font-inconsolata min-w-0">
@@ -73,6 +94,7 @@ export default function Navbar({ onUserChanged }: { onUserChanged?: () => void }
       </nav>
       {showSignUp && <SignUpModal onClose={()=>setShowSignUp(false)} onSuccess={handleSignUpSuccess} type={modalType} />}
       {showAccount && <MyAccountModal email={userEmail} onClose={()=>setShowAccount(false)} onLogout={handleLogout} />}
+      {showLinkModal && <LinkModal onClose={() => setShowLinkModal(false)} />}
     </>
   )
 } 

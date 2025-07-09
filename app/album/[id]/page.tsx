@@ -4,8 +4,9 @@ import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { Heart, Share2, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
-import { getFirestore, doc, getDoc, updateDoc } from 'firebase/firestore'
+import { getFirestore, doc, getDoc, updateDoc, onSnapshot, increment } from 'firebase/firestore'
 import { initializeApp, getApps } from 'firebase/app'
+import ViewsModal from '../../components/ViewsModal';
 
 // Firebase 설정
 const firebaseConfig = {
@@ -39,6 +40,65 @@ export default function AlbumPage({ params }: { params: { id: string } }) {
   const [album, setAlbum] = useState<Album | null>(null)
   const [loading, setLoading] = useState(true)
   const [liked, setLiked] = useState(false)
+  const [showViewsModal, setShowViewsModal] = useState(false);
+  const [totalViews, setTotalViews] = useState(0);
+  const [createdAt, setCreatedAt] = useState(null);
+  const [viewsByDate, setViewsByDate] = useState({});
+
+  // 실시간 구독 및 unique visitor 집계
+  useEffect(() => {
+    setShowViewsModal(true); // 페이지 진입 시 무조건 ViewsModal 띄우기 (임시)
+    if (!params.id) return;
+    const db = getFirestore();
+    const albumRef = doc(db, 'albums', params.id);
+    // 실시간 구독
+    const unsubscribe = onSnapshot(albumRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setTotalViews(data.totalViews || 0);
+        setCreatedAt(data.createdAt || null);
+        setViewsByDate(data.viewsByDate || {});
+      }
+    });
+    // unique visitor 집계 (1인 1회)
+    const localKey = `visited_album_${params.id}`;
+    if (!localStorage.getItem(localKey)) {
+      updateDoc(albumRef, {
+        totalViews: increment(1),
+        [`viewsByDate.${getTodayString()}`]: increment(1),
+      });
+      localStorage.setItem(localKey, '1');
+    } else {
+      // 이미 방문한 경우에도 viewsByDate, totalViews는 증가 X (1인 1회만 허용)
+    }
+    return () => unsubscribe();
+  }, [params.id]);
+
+  function getTodayString() {
+    const d = new Date();
+    return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
+  }
+
+  // D+N 계산
+  const daysSinceCreated = createdAt ? Math.max(1, Math.ceil((Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24))) : 1;
+
+  // 최근 7일 조회수 합계
+  const last7DaysViews = Object.entries(viewsByDate)
+    .filter(([date]) => {
+      const d = new Date(date);
+      return (Date.now() - d.getTime()) < 7 * 24 * 60 * 60 * 1000;
+    })
+    .reduce((sum, [, count]) => sum + (typeof count === 'number' ? count : 0), 0);
+
+  // Most Active Day 계산
+  let mostActiveDay = '-';
+  let mostActiveCount = 0;
+  Object.entries(viewsByDate).forEach(([date, count]) => {
+    if (typeof count === 'number' && count > mostActiveCount) {
+      mostActiveDay = date;
+      mostActiveCount = count;
+    }
+  });
 
   useEffect(() => {
     const fetchAlbum = async () => {
@@ -85,6 +145,15 @@ export default function AlbumPage({ params }: { params: { id: string } }) {
     }
   }
 
+  useEffect(() => {
+    // ViewsModal 툴바 연동
+    const handler = (e: any) => {
+      if (e.detail === 'views') setShowViewsModal(true);
+    };
+    window.addEventListener('open-modal', handler);
+    return () => window.removeEventListener('open-modal', handler);
+  }, [params.id]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center">
@@ -112,6 +181,17 @@ export default function AlbumPage({ params }: { params: { id: string } }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
+      {/* ViewsModal 트리거 임시 버튼 제거 */}
+      {showViewsModal && (
+        <ViewsModal
+          totalViews={totalViews}
+          daysSinceCreated={daysSinceCreated}
+          last7DaysViews={last7DaysViews}
+          mostActiveDay={mostActiveDay}
+          mostActiveCount={mostActiveCount}
+          onClose={() => setShowViewsModal(false)}
+        />
+      )}
       <div className="container mx-auto px-4 py-8">
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-8">
