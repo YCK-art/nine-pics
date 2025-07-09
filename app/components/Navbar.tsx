@@ -1,9 +1,9 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import SignUpModal from './SignUpModal'
 import MyAccountModal from './MyAccountModal'
-import { getAuth } from 'firebase/auth'
+import { getAuth, onAuthStateChanged } from 'firebase/auth'
 
 export default function Navbar({ onUserChanged }: { onUserChanged?: () => void } = {}) {
   const [showSignUp, setShowSignUp] = useState(false)
@@ -12,12 +12,26 @@ export default function Navbar({ onUserChanged }: { onUserChanged?: () => void }
   const [userEmail, setUserEmail] = useState('')
   const [modalType, setModalType] = useState<'signup' | 'login'>('signup')
 
+  // Firebase Auth 상태 감지
+  useEffect(() => {
+    const auth = getAuth()
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsLoggedIn(true)
+        setUserEmail(user.email || '')
+        if (onUserChanged) onUserChanged()
+      } else {
+        setIsLoggedIn(false)
+        setUserEmail('')
+      }
+    })
+
+    return () => unsubscribe()
+  }, [onUserChanged])
+
   // 로그인/회원가입 성공 시 콜백
   const handleSignUpSuccess = () => {
-    const user = getAuth().currentUser
     setShowSignUp(false)
-    setIsLoggedIn(true)
-    setUserEmail(user?.email || '')
     if (onUserChanged) onUserChanged()
   }
 

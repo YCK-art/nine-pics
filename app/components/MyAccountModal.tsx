@@ -16,9 +16,13 @@ export default function MyAccountModal({ email, onClose, onLogout }: { email: st
   }
 
   const handleLogout = async () => {
-    await signOut(getAuth())
-    onLogout()
-    onClose()
+    try {
+      await signOut(getAuth())
+      onLogout()
+      onClose()
+    } catch (error) {
+      console.error('로그아웃 오류:', error)
+    }
   }
 
   return (

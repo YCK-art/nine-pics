@@ -3,8 +3,9 @@
 import React, { useRef, useState } from 'react'
 import { Upload, Share2, X, Eye } from 'lucide-react'
 import Image from 'next/image'
-import { getFirestore, collection, getDocs, query, where, doc, getDoc, onSnapshot } from 'firebase/firestore'
-import { getAuth } from 'firebase/auth'
+import { getFirestore, collection, getDocs, query, where, doc, getDoc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore'
+import { getAuth, onAuthStateChanged } from 'firebase/auth'
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
 import { initializeApp, getApps } from 'firebase/app'
 
 interface Photo {
@@ -53,7 +54,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyD0464CV_q1OwDzte8XOwyOaP6BlO6lm9A",
   authDomain: "nine-pics-a761a.firebaseapp.com",
   projectId: "nine-pics-a761a",
-  storageBucket: "nine-pics-a761a.appspot.com",
+  storageBucket: "nine-pics-a761a.firebasestorage.app",
   messagingSenderId: "149224975487",
   appId: "1:149224975487:web:3e669ea918435f5319a34a",
   measurementId: "G-TNE9LHNHMN"
@@ -73,6 +74,22 @@ export default function Home() {
   const [totalUsers, setTotalUsers] = useState<number>(0)
   const [usersAt1Slot, setUsersAt1Slot] = useState<number>(0)
   const [userPercentile, setUserPercentile] = useState<number>(0)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [progress, setProgress] = useState(0);
+
+  // Firebase Auth 상태 감지
+  React.useEffect(() => {
+    const auth = getAuth()
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsLoggedIn(!!user)
+    })
+    return () => unsubscribe()
+  }, [])
+
+  // fileInputRef 초기화 확인
+  React.useEffect(() => {
+    console.log('fileInputRef 상태:', fileInputRef.current)
+  }, [fileInputRef.current])
 
   // 예시 데이터
   // const totalUsers = 12345
@@ -118,46 +135,83 @@ export default function Home() {
     return () => unsubscribe()
   }, [])
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files
-    if (!files || files.length === 0) return
+  // Firestore에서 앨범 데이터 불러오기 (실시간 반영)
+  React.useEffect(() => {
+    if (!albumId) return;
+    const albumRef = doc(db, 'albums', albumId);
+    const unsubscribe = onSnapshot(albumRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setPhotos((data.photos || []).slice(0, getUnlockedSlots()));
+      }
+    });
+    return () => unsubscribe();
+  }, [albumId, viewCount]);
 
-    setIsUploading(true)
+  // 사진 업로드 함수 리팩토링 (uploadBytesResumable 사용)
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
 
     try {
-      const newPhotos: Photo[] = []
-      
-      for (let i = 0; i < Math.min(files.length, unlockedSlots - photos.length); i++) {
-        const file = files[i]
-        const reader = new FileReader()
-        
-        await new Promise<void>((resolve) => {
-          reader.onload = (e) => {
-            const result = e.target?.result as string
-            newPhotos.push({
-              id: `photo-${Date.now()}-${i}`,
-              url: result,
-              alt: file.name
-            })
-            resolve()
-          }
-          reader.readAsDataURL(file)
-        })
+      const storage = getStorage();
+      let currentAlbumId = albumId;
+      if (!currentAlbumId) {
+        currentAlbumId = `album-${Date.now()}`;
+        setAlbumId(currentAlbumId);
       }
-
-      setPhotos(prev => [...prev, ...newPhotos])
-      
-      // 첫 번째 사진 업로드 시 앨범 ID 생성
-      if (photos.length === 0 && newPhotos.length > 0) {
-        const newAlbumId = `album-${Date.now()}`
-        setAlbumId(newAlbumId)
+      const albumRef = doc(db, 'albums', currentAlbumId);
+      const albumSnap = await getDoc(albumRef);
+      let existingPhotos = albumSnap.exists() ? (albumSnap.data().photos || []) : [];
+      const availableSlots = getUnlockedSlots() - existingPhotos.length;
+      const filesArr = Array.from(files).slice(0, availableSlots);
+      const uploadPromises = filesArr.map((file, idx) => {
+        return new Promise((resolve, reject) => {
+          const safeFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+          const storageRef = ref(storage, `albums/${currentAlbumId}/${safeFileName}`);
+          const metadata = { contentType: file.type };
+          const uploadTask = uploadBytesResumable(storageRef, file, metadata);
+          uploadTask.on(
+            'state_changed',
+            null,
+            (error) => reject(error),
+            async () => {
+              const url = await getDownloadURL(storageRef);
+              resolve({
+                id: `photo-${Date.now()}-${idx}`,
+                url,
+                alt: file.name,
+              });
+            }
+          );
+        });
+      });
+      const uploadedPhotos = await Promise.all(uploadPromises);
+      if (uploadedPhotos.length > 0) {
+        const updatedPhotos = [...existingPhotos, ...uploadedPhotos].slice(0, getUnlockedSlots());
+        if (!albumSnap.exists()) {
+          await setDoc(albumRef, {
+            id: currentAlbumId,
+            photos: updatedPhotos,
+            viewCount: 0,
+            createdAt: new Date().toISOString(),
+            userId: getAuth().currentUser?.uid || '',
+          });
+        } else {
+          await updateDoc(albumRef, { photos: updatedPhotos });
+        }
+        setPhotos(updatedPhotos);
       }
-    } catch (error) {
-      console.error('파일 업로드 오류:', error)
+    } catch (err: any) {
+      console.error('업로드 실패:', err);
+      alert('업로드 실패: ' + (err?.message || err));
     } finally {
-      setIsUploading(false)
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
-  }
+  };
 
   const removePhoto = (photoId: string) => {
     setPhotos(prev => prev.filter(photo => photo.id !== photoId))
@@ -173,8 +227,58 @@ export default function Home() {
 
   // 프레임 클릭 시 파일 업로드 input 트리거
   const handleFrameClick = (isUnlocked: boolean) => {
-    if (isUnlocked && fileInputRef.current && !isUploading) {
+    console.log('프레임 클릭됨, 해제됨:', isUnlocked)
+    console.log('isUploading 상태:', isUploading)
+    console.log('fileInputRef 상태:', fileInputRef.current)
+    
+    if (!isUnlocked) {
+      console.log('잠긴 슬롯이므로 클릭 무시')
+      return
+    }
+    
+    // 로그인 상태 확인
+    const auth = getAuth()
+    const currentUser = auth.currentUser
+    console.log('클릭 시 사용자:', currentUser?.email)
+    
+    if (!currentUser) {
+      alert('사진을 업로드하려면 로그인이 필요합니다.')
+      return
+    }
+    
+    // isUploading 상태 강제로 false로 설정 (디버깅용)
+    if (isUploading) {
+      console.log('업로드 중이므로 강제로 false로 설정')
+      setIsUploading(false)
+    }
+    
+    if (fileInputRef.current) {
+      console.log('파일 input 클릭 트리거')
+      // 파일 input을 직접 표시하여 사용자가 선택할 수 있도록 함
+      fileInputRef.current.style.display = 'block'
+      fileInputRef.current.style.position = 'absolute'
+      fileInputRef.current.style.top = '50%'
+      fileInputRef.current.style.left = '50%'
+      fileInputRef.current.style.transform = 'translate(-50%, -50%)'
+      fileInputRef.current.style.zIndex = '1000'
       fileInputRef.current.click()
+      
+      // 3초 후 다시 숨김
+      setTimeout(() => {
+        if (fileInputRef.current) {
+          fileInputRef.current.style.display = 'none'
+        }
+      }, 3000)
+    } else {
+      console.log('파일 input이 null입니다')
+      // fileInputRef가 null인 경우 강제로 input을 찾아서 클릭
+      const inputElement = document.querySelector('input[type="file"]') as HTMLInputElement
+      if (inputElement) {
+        console.log('DOM에서 파일 input을 찾아서 클릭')
+        inputElement.click()
+      } else {
+        console.log('DOM에서도 파일 input을 찾을 수 없습니다')
+      }
     }
   }
 
@@ -243,7 +347,7 @@ export default function Home() {
         <div className="bg-black rounded-2xl shadow-lg p-6 mb-8">
           <div className="grid grid-cols-3 gap-4">
             {Array.from({ length: 9 }, (_, index) => {
-              const photo = photos[index]
+              const photo = photos.slice(0, unlockedSlots)[index]
               const isUnlocked = index < unlockedSlots
               const isEmpty = !photo
               const bgColor = slotColors[index]

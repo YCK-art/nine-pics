@@ -4,6 +4,23 @@ import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { Heart, Share2, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import { getFirestore, doc, getDoc, updateDoc } from 'firebase/firestore'
+import { initializeApp, getApps } from 'firebase/app'
+
+// Firebase 설정
+const firebaseConfig = {
+  apiKey: "AIzaSyD0464CV_q1OwDzte8XOwyOaP6BlO6lm9A",
+  authDomain: "nine-pics-a761a.firebaseapp.com",
+  projectId: "nine-pics-a761a",
+  storageBucket: "nine-pics-a761a.firebasestorage.app",
+  messagingSenderId: "149224975487",
+  appId: "1:149224975487:web:3e669ea918435f5319a34a",
+  measurementId: "G-TNE9LHNHMN"
+}
+
+if (!getApps().length) {
+  initializeApp(firebaseConfig)
+}
 
 interface Photo {
   id: string
@@ -23,36 +40,33 @@ export default function AlbumPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true)
   const [liked, setLiked] = useState(false)
 
-  // 실제 구현에서는 API에서 앨범 데이터를 가져와야 합니다
-  // 여기서는 데모용으로 더미 데이터를 사용합니다
   useEffect(() => {
-    // 시뮬레이션된 로딩
-    setTimeout(() => {
-      const dummyAlbum: Album = {
-        id: params.id,
-        photos: [
-          {
-            id: '1',
-            url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=400&fit=crop',
-            alt: '자연 풍경'
-          },
-          {
-            id: '2',
-            url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=400&fit=crop',
-            alt: '숲속 풍경'
-          },
-          {
-            id: '3',
-            url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=400&fit=crop',
-            alt: '산맥 풍경'
-          }
-        ],
-        viewCount: 156,
-        createdAt: new Date().toISOString()
+    const fetchAlbum = async () => {
+      setLoading(true)
+      try {
+        const db = getFirestore()
+        const albumRef = doc(db, 'albums', params.id)
+        const albumSnap = await getDoc(albumRef)
+        
+        if (albumSnap.exists()) {
+          const albumData = albumSnap.data() as Album
+          setAlbum(albumData)
+          // 조회수 증가
+          await updateDoc(albumRef, { 
+            viewCount: (albumData.viewCount || 0) + 1 
+          })
+        } else {
+          setAlbum(null)
+        }
+      } catch (error) {
+        console.error('앨범 불러오기 오류:', error)
+        setAlbum(null)
+      } finally {
+        setLoading(false)
       }
-      setAlbum(dummyAlbum)
-      setLoading(false)
-    }, 1000)
+    }
+    
+    fetchAlbum()
   }, [params.id])
 
   const handleLike = () => {

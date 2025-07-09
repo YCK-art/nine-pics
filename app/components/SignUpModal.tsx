@@ -11,7 +11,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyD0464CV_q1OwDzte8XOwyOaP6BlO6lm9A",
   authDomain: "nine-pics-a761a.firebaseapp.com",
   projectId: "nine-pics-a761a",
-  storageBucket: "nine-pics-a761a.appspot.com",
+  storageBucket: "nine-pics-a761a.firebasestorage.app",
   messagingSenderId: "149224975487",
   appId: "1:149224975487:web:3e669ea918435f5319a34a",
   measurementId: "G-TNE9LHNHMN"
