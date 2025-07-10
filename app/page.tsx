@@ -154,12 +154,18 @@ export default function Home() {
       const users = usersSnapshot.docs.map(doc => doc.data())
       setTotalUsers(users.length)
       
+      // 디버깅: 현재 unlocked 슬롯 수와 사용자 데이터 확인
+      console.log('Debug - Current unlocked slots:', unlockedSlots)
+      console.log('Debug - Users data:', users)
+      
       // 현재 사용자의 unlocked 슬롯 수에 맞춰서 계산
       const currentUnlockedSlots = unlockedSlots
       const usersAtCurrentSlot = users.filter(u => {
         const userSlotLevel = Number(u.slotLevel || 1)
+        console.log('Debug - User slotLevel:', u.uid, userSlotLevel, '>=', currentUnlockedSlots, '?', userSlotLevel >= currentUnlockedSlots)
         return userSlotLevel >= currentUnlockedSlots
       }).length
+      console.log('Debug - Users at current slot:', usersAtCurrentSlot)
       setUsersAt1Slot(usersAtCurrentSlot)
       
       // 내 percentile 계산 (현재 unlocked 슬롯 기준)
@@ -167,6 +173,7 @@ export default function Home() {
       const currentUser = auth.currentUser
       if (currentUser) {
         const myData = users.find(u => u.uid === currentUser.uid)
+        console.log('Debug - My data:', myData)
         if (myData && myData.slotLevel != null) {
           const mySlot = Number(myData.slotLevel)
           // 현재 unlocked 슬롯보다 높은 슬롯을 가진 유저 수 계산
@@ -174,6 +181,7 @@ export default function Home() {
           let percentile = 100 - Math.round((higher / users.length) * 100)
           if (users.length === 1) percentile = 100
           if (percentile < 1) percentile = 1
+          console.log('Debug - Percentile calculation:', { higher, total: users.length, percentile })
           setUserPercentile(percentile)
         } else if (users.length === 1) {
           setUserPercentile(100)
@@ -212,6 +220,20 @@ export default function Home() {
           createdAt: data.createdAt || null,
         });
         setViewCount(totalViews);
+        
+        // 현재 사용자의 slotLevel 업데이트
+        const auth = getAuth();
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          const userRef = doc(db, 'users', currentUser.uid);
+          const currentSlotLevel = getUnlockedSlots();
+          updateDoc(userRef, {
+            slotLevel: currentSlotLevel,
+            lastUpdated: new Date().toISOString()
+          }).catch(err => {
+            console.error('Failed to update slotLevel:', err);
+          });
+        }
       } else {
         setPhotos([]);
         setAlbumMeta({ totalViews: 0, createdAt: null });
