@@ -153,16 +153,24 @@ export default function Home() {
     const unsubscribe = onSnapshot(collection(db, 'users'), (usersSnapshot) => {
       const users = usersSnapshot.docs.map(doc => doc.data())
       setTotalUsers(users.length)
-      const at1 = users.filter(u => u.slotLevel === 1).length
-      setUsersAt1Slot(at1)
-      // 내 percentile 계산
+      
+      // 현재 사용자의 unlocked 슬롯 수에 맞춰서 계산
+      const currentUnlockedSlots = unlockedSlots
+      const usersAtCurrentSlot = users.filter(u => {
+        const userSlotLevel = Number(u.slotLevel || 1)
+        return userSlotLevel >= currentUnlockedSlots
+      }).length
+      setUsersAt1Slot(usersAtCurrentSlot)
+      
+      // 내 percentile 계산 (현재 unlocked 슬롯 기준)
       const auth = getAuth()
       const currentUser = auth.currentUser
       if (currentUser) {
         const myData = users.find(u => u.uid === currentUser.uid)
         if (myData && myData.slotLevel != null) {
           const mySlot = Number(myData.slotLevel)
-          const higher = users.filter(u => Number(u.slotLevel || 1) > mySlot).length
+          // 현재 unlocked 슬롯보다 높은 슬롯을 가진 유저 수 계산
+          const higher = users.filter(u => Number(u.slotLevel || 1) > currentUnlockedSlots).length
           let percentile = 100 - Math.round((higher / users.length) * 100)
           if (users.length === 1) percentile = 100
           if (percentile < 1) percentile = 1
@@ -173,7 +181,7 @@ export default function Home() {
       }
     })
     return () => unsubscribe()
-  }, [])
+  }, [unlockedSlots])
 
   // 사용자별 앨범 ID 관리
   React.useEffect(() => {
@@ -491,14 +499,14 @@ export default function Home() {
           <div className="rounded-[48px] bg-white shadow-2xl p-10 w-[420px] max-w-full relative flex flex-col items-center text-black" onClick={(e) => e.stopPropagation()} style={{boxShadow:'0 8px 32px 0 rgba(31, 38, 135, 0.15)'}}>
             <button className="absolute top-6 right-6 text-gray-400 hover:text-gray-600" onClick={()=>setShowSlotsModal(false)}><X size={28}/></button>
             <div className="w-full flex flex-col items-center mb-8">
-              <div className="text-[38px] font-bold text-black mb-2 font-inconsolata">1 Slot Open</div>
+              <div className="text-[38px] font-bold text-black mb-2 font-inconsolata">{unlockedSlots} Slot{unlockedSlots > 1 ? 's' : ''} Open</div>
               <div className="flex flex-col gap-2 w-full">
                 <div className="flex items-center justify-between text-black text-lg font-inconsolata">
                   <span>Total Users</span>
                   <span className="font-bold">{totalUsers.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between text-black text-lg font-inconsolata">
-                  <span>Users at 1 Slot</span>
+                  <span>Users at {unlockedSlots} Slot{unlockedSlots > 1 ? 's' : ''}</span>
                   <span className="font-bold">{usersAt1Slot.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between text-black text-lg font-inconsolata">
@@ -521,7 +529,7 @@ export default function Home() {
                 ></div>
               ))}
             </div>
-            <div className="text-xs text-black font-inconsolata">the 1st slot is open</div>
+            <div className="text-xs text-black font-inconsolata">the {unlockedSlots}{unlockedSlots === 1 ? 'st' : unlockedSlots === 2 ? 'nd' : unlockedSlots === 3 ? 'rd' : 'th'} slot{unlockedSlots > 1 ? 's are' : ' is'} open</div>
           </div>
         </div>
       )}
