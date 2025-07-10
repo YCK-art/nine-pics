@@ -555,8 +555,8 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
                   <span className="font-bold">{usersAt1Slot.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between text-black text-lg font-inconsolata">
-                  <span>This User's Percentile</span>
-                  <span className="font-bold">Top {userPercentile}%</span>
+                  <span>Your Rank</span>
+                  <span className="font-bold">#{userPercentile}</span>
                 </div>
               </div>
             </div>
