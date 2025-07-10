@@ -22,6 +22,16 @@ export default function ViewsModal({
   daysSinceCreated: number;
   onClose: () => void;
 }) {
+  // 조회수를 K, M 단위로 요약하는 함수
+  const formatViews = (views: number) => {
+    if (views >= 1000000) {
+      return `${(views / 1000000).toFixed(1)}M`;
+    } else if (views >= 1000) {
+      return `${(views / 1000).toFixed(1)}K`;
+    }
+    return views.toString();
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
       <div className="rounded-[48px] bg-white shadow-2xl p-12 w-[420px] max-w-full relative flex flex-col items-center text-black font-inconsolata" onClick={(e) => e.stopPropagation()} style={{boxShadow:'0 8px 32px 0 rgba(31, 38, 135, 0.15)'}}>
@@ -31,7 +41,7 @@ export default function ViewsModal({
         <div className="flex flex-col items-center justify-center w-full h-full gap-10 mt-6 mb-2">
           <div className="flex flex-col items-center">
             <div className="text-2xl font-bold mb-2">Total Views</div>
-            <div className="text-5xl font-extrabold">{totalViews}</div>
+            <div className="text-5xl font-extrabold">{formatViews(totalViews)}</div>
           </div>
           <div className="flex flex-col items-center">
             <div className="text-xl font-semibold mb-1">Joined</div>

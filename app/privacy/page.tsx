@@ -58,10 +58,14 @@ export default function PrivacyPage() {
 
   // 조회수에 따른 슬롯 해제 로직
   const getUnlockedSlots = () => {
-    if (albumMeta.totalViews >= 1000) return 9
-    if (albumMeta.totalViews >= 500) return 6
-    if (albumMeta.totalViews >= 200) return 4
-    if (albumMeta.totalViews >= 50) return 2
+    if (albumMeta.totalViews >= 30000000) return 9
+    if (albumMeta.totalViews >= 15000000) return 8
+    if (albumMeta.totalViews >= 5000000) return 7
+    if (albumMeta.totalViews >= 1000000) return 6
+    if (albumMeta.totalViews >= 200000) return 5
+    if (albumMeta.totalViews >= 20000) return 4
+    if (albumMeta.totalViews >= 1000) return 3
+    if (albumMeta.totalViews >= 100) return 2
     return 1
   }
 
