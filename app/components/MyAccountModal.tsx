@@ -4,13 +4,17 @@ import React, { useState } from 'react'
 import { getAuth, signOut } from 'firebase/auth'
 import { User, Link as LinkIcon } from 'lucide-react'
 
-export default function MyAccountModal({ email, onClose, onLogout }: { email: string, onClose: () => void, onLogout: () => void }) {
+export default function MyAccountModal({ email, onClose, onLogout, albumUid }: { email: string, onClose: () => void, onLogout: () => void, albumUid?: string }) {
   const [copied, setCopied] = useState(false)
   let userLink = '';
   let displayLink = '';
+  let isOwner = true;
   if (typeof window !== 'undefined') {
     const auth = getAuth();
     const uid = auth.currentUser?.uid;
+    if (albumUid && uid && albumUid !== uid) {
+      isOwner = false;
+    }
     if (uid) {
       userLink = `https://www.ninepics.com/album/${uid}`;
       displayLink = `ninepics.com/album/${uid}`;
@@ -52,20 +56,23 @@ export default function MyAccountModal({ email, onClose, onLogout }: { email: st
           <div className="text-gray-500 text-sm font-inconsolata mb-6">/{email ? email.split('@')[0] : 'user'}</div>
         </div>
         <div className="w-full flex items-center justify-center gap-4 border-t border-gray-200 px-8 py-6 bg-gray-50 rounded-b-[48px]">
-          <button
-            className="flex-1 py-3 rounded-full bg-black text-white font-semibold font-inconsolata text-base hover:bg-gray-800 transition-colors"
-            onClick={handleLogout}
-          >
-            Log out
-          </button>
-          <button
-            className="flex-1 py-3 rounded-full bg-gray-200 text-black font-semibold font-inconsolata text-base hover:bg-gray-300 transition-colors flex items-center justify-center gap-2"
-            onClick={handleCopy}
-            disabled={!userLink}
-          >
-            <LinkIcon className="w-5 h-5" />
-            {copied ? 'Copied!' : 'Copy Link'}
-          </button>
+          {isOwner && (
+            <>
+              <button
+                className="flex-1 py-3 rounded-full bg-black text-white font-semibold font-inconsolata text-base hover:bg-gray-800 transition-colors"
+                onClick={handleLogout}
+              >
+                Log out
+              </button>
+              <button
+                className="flex-1 py-3 rounded-full bg-gray-200 text-black font-semibold font-inconsolata text-base hover:bg-gray-300 transition-colors flex items-center justify-center gap-2"
+                onClick={handleCopy}
+              >
+                <LinkIcon className="w-5 h-5 mr-1" />
+                {copied ? 'Copied!' : 'Copy Link'}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

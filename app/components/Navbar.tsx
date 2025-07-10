@@ -13,6 +13,7 @@ export default function Navbar({ onUserChanged }: { onUserChanged?: () => void }
   const [userEmail, setUserEmail] = useState('')
   const [modalType, setModalType] = useState<'signup' | 'login'>('signup')
   const [showLinkModal, setShowLinkModal] = useState(false);
+  const [userUid, setUserUid] = useState<string>('');
 
   // Firebase Auth 상태 감지
   useEffect(() => {
@@ -21,10 +22,12 @@ export default function Navbar({ onUserChanged }: { onUserChanged?: () => void }
       if (user) {
         setIsLoggedIn(true)
         setUserEmail(user.email || '')
+        setUserUid(user.uid || '')
         if (onUserChanged) onUserChanged()
       } else {
         setIsLoggedIn(false)
         setUserEmail('')
+        setUserUid('')
       }
     })
 
@@ -93,7 +96,14 @@ export default function Navbar({ onUserChanged }: { onUserChanged?: () => void }
         </div>
       </nav>
       {showSignUp && <SignUpModal onClose={()=>setShowSignUp(false)} onSuccess={handleSignUpSuccess} type={modalType} />}
-      {showAccount && <MyAccountModal email={userEmail} onClose={()=>setShowAccount(false)} onLogout={handleLogout} />}
+      {showAccount && (
+        <MyAccountModal
+          email={userEmail}
+          onClose={() => setShowAccount(false)}
+          onLogout={handleLogout}
+          albumUid={userUid}
+        />
+      )}
       {showLinkModal && <LinkModal onClose={() => setShowLinkModal(false)} />}
     </>
   )

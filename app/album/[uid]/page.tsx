@@ -3,9 +3,11 @@
 import React, { useState, useEffect } from 'react'
 import { Eye } from 'lucide-react'
 import Image from 'next/image'
-import { getFirestore, doc, onSnapshot } from 'firebase/firestore'
+import { getFirestore, doc, onSnapshot, getDoc } from 'firebase/firestore'
 import { initializeApp, getApps } from 'firebase/app'
 import ViewsModal from '../../components/ViewsModal'
+import Navbar from '../../components/Navbar'
+import MyAccountModal from '../../components/MyAccountModal'
 
 interface Photo {
   id: string
@@ -15,17 +17,6 @@ interface Photo {
 
 const slotColors = [
   '#EAF4F8', '#D4F1E1', '#FFE3D2', '#F7CED7', '#E0D4F7', '#7D9EEB', '#8151D5', '#2D3A70', '#121212',
-]
-const slotGlow = [
-  '0 0 0 6px #b6d6e6, 0 0 16px 6px #b6d6e6',
-  '0 0 0 6px #aee9c8, 0 0 16px 6px #aee9c8',
-  '0 0 0 6px #ffd1b3, 0 0 16px 6px #ffd1b3',
-  '0 0 0 6px #f7b6c7, 0 0 16px 6px #f7b6c7',
-  '0 0 0 6px #c7b6e6, 0 0 16px 6px #c7b6e6',
-  '0 0 0 6px #7D9EEB, 0 0 16px 6px #7D9EEB',
-  '0 0 0 6px #8151D5, 0 0 16px 6px #8151D5',
-  '0 0 0 6px #2D3A70, 0 0 16px 6px #2D3A70',
-  '0 0 0 6px #121212, 0 0 16px 6px #121212',
 ]
 
 // Firebase 설정
@@ -49,6 +40,8 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
   const [albumMeta, setAlbumMeta] = useState<{ totalViews: number, createdAt: string | null }>({ totalViews: 0, createdAt: null })
   const [showViewsModal, setShowViewsModal] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [showAccount, setShowAccount] = useState(false)
 
   // 슬롯 해제 로직
   const getUnlockedSlots = () => {
@@ -62,32 +55,97 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
 
   // Firestore에서 앨범 데이터 구독
   useEffect(() => {
-    if (!params.uid) return
-    const albumId = `user-${params.uid}`
-    const albumRef = doc(db, 'albums', albumId)
-    const unsubscribe = onSnapshot(albumRef, (snap) => {
+    if (!params.uid) {
+      setError('UID가 없습니다')
       setIsLoading(false)
-      if (snap.exists()) {
-        const data = snap.data()
-        setPhotos((data.photos || []).slice(0, getUnlockedSlots()))
-        setAlbumMeta({
-          totalViews: data.totalViews || data.viewCount || 0,
-          createdAt: data.createdAt || null,
-        })
-        setViewCount(data.totalViews || data.viewCount || 0)
-      } else {
-        setPhotos([])
-        setAlbumMeta({ totalViews: 0, createdAt: null })
-        setViewCount(0)
+      return
+    }
+
+    console.log('Fetching album for UID:', params.uid)
+    
+    // 여러 가능한 문서 ID를 시도
+    const possibleIds = [
+      `user-${params.uid}`,
+      params.uid,
+      `album-${params.uid}`,
+      `ninepics-${params.uid}`
+    ]
+
+    let unsubscribe: (() => void) | null = null
+
+    const tryFetchAlbum = async () => {
+      for (const albumId of possibleIds) {
+        try {
+          console.log('Trying album ID:', albumId)
+          const albumRef = doc(db, 'albums', albumId)
+          const albumSnap = await getDoc(albumRef)
+          
+          if (albumSnap.exists()) {
+            console.log('Found album with ID:', albumId)
+            const data = albumSnap.data()
+            console.log('Album data:', data)
+            
+            // 실시간 구독 설정
+            unsubscribe = onSnapshot(albumRef, (snap) => {
+              if (snap.exists()) {
+                const realtimeData = snap.data()
+                console.log('Realtime album data:', realtimeData)
+                
+                const photosArray = realtimeData.photos || []
+                console.log('Photos array:', photosArray)
+                
+                setPhotos(photosArray.slice(0, getUnlockedSlots()))
+                setAlbumMeta({
+                  totalViews: realtimeData.totalViews || realtimeData.viewCount || 0,
+                  createdAt: realtimeData.createdAt || null,
+                })
+                setViewCount(realtimeData.totalViews || realtimeData.viewCount || 0)
+                setError(null)
+              } else {
+                console.log('Album no longer exists')
+                setPhotos([])
+                setAlbumMeta({ totalViews: 0, createdAt: null })
+                setViewCount(0)
+                setError('앨범을 찾을 수 없습니다')
+              }
+            })
+            
+            setIsLoading(false)
+            return // 성공하면 루프 종료
+          }
+        } catch (err) {
+          console.error('Error fetching album with ID:', albumId, err)
+        }
       }
-    })
-    return () => unsubscribe()
+      
+      // 모든 ID를 시도했지만 찾지 못함
+      console.log('No album found with any of the tried IDs')
+      setPhotos([])
+      setAlbumMeta({ totalViews: 0, createdAt: null })
+      setViewCount(0)
+      setError('앨범을 찾을 수 없습니다')
+      setIsLoading(false)
+    }
+
+    tryFetchAlbum()
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe()
+      }
+    }
   }, [params.uid])
 
   // 디버깅용 콘솔 로그
   useEffect(() => {
-    console.log('photos', photos, 'unlockedSlots', unlockedSlots, 'albumMeta', albumMeta)
-  }, [photos, unlockedSlots, albumMeta])
+    console.log('Current state:', {
+      photos: photos,
+      unlockedSlots: unlockedSlots,
+      albumMeta: albumMeta,
+      viewCount: viewCount,
+      error: error
+    })
+  }, [photos, unlockedSlots, albumMeta, viewCount, error])
 
   // daysSinceCreated 계산
   const daysSinceCreated = albumMeta.createdAt ? Math.max(1, Math.ceil((Date.now() - new Date(albumMeta.createdAt).getTime()) / (1000 * 60 * 60 * 24))) : 1
@@ -104,12 +162,13 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
   }
 
   // 앨범이 없을 때
-  if (!photos || photos.length === 0) {
+  if (error || !photos || photos.length === 0) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <div className="text-2xl font-bold text-white mb-2">앨범을 찾을 수 없습니다</div>
           <div className="text-gray-400 mb-4">링크를 다시 확인해주세요</div>
+          <div className="text-gray-500 text-sm mb-4">UID: {params.uid}</div>
           <a href="/" className="text-blue-400 hover:underline">홈으로 돌아가기</a>
         </div>
       </div>
@@ -118,33 +177,8 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
 
   return (
     <div className="min-h-screen bg-black">
+      <Navbar />
       <div className="container mx-auto px-4 py-8">
-        {/* 헤더 */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2 font-inconsolata">nine-pics</h1>
-          <p className="text-gray-400">@{params.uid}</p>
-        </div>
-        {/* 통계 정보 */}
-        <div className="max-w-md mx-auto mb-8">
-          <div className="bg-gray-900 rounded-2xl p-6 shadow-lg">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Eye className="w-5 h-5 text-gray-300" />
-                <span className="text-gray-300 font-inconsolata">Views</span>
-              </div>
-              <button
-                onClick={() => setShowViewsModal(true)}
-                className="text-sm text-blue-400 hover:text-blue-200 font-inconsolata"
-              >
-                자세히 보기
-              </button>
-            </div>
-            <div className="text-3xl font-bold text-white font-inconsolata">{viewCount.toLocaleString()}</div>
-            <div className="text-sm text-gray-400 mt-1">
-              {daysSinceCreated}일 전 생성
-            </div>
-          </div>
-        </div>
         {/* 사진 그리드 */}
         <div className="bg-black rounded-2xl shadow-lg p-6 mb-8">
           <div className="grid grid-cols-3 gap-4">
@@ -171,7 +205,6 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
                         fill
                         className="object-cover"
                       />
-                      {/* 삭제 버튼 없음 (읽기 전용) */}
                     </div>
                   ) : (
                     <div className="text-center pointer-events-none">
@@ -198,9 +231,17 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
       {/* Views Modal */}
       {showViewsModal && (
         <ViewsModal
-          totalViews={albumMeta.totalViews}
+          totalViews={viewCount}
           daysSinceCreated={daysSinceCreated}
           onClose={() => setShowViewsModal(false)}
+        />
+      )}
+      {showAccount && (
+        <MyAccountModal
+          email={''}
+          onClose={() => setShowAccount(false)}
+          onLogout={() => {}}
+          albumUid={params.uid}
         />
       )}
     </div>
