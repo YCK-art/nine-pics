@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { Eye, Upload } from 'lucide-react'
 import Image from 'next/image'
-import { getFirestore, doc, onSnapshot, getDoc, collection, getDocs, increment, updateDoc } from 'firebase/firestore'
+import { getFirestore, doc, onSnapshot, getDoc, collection, getDocs, increment, updateDoc, setDoc } from 'firebase/firestore'
 import { initializeApp, getApps } from 'firebase/app'
 import ViewsModal from '../../components/ViewsModal'
 import Navbar from '../../components/Navbar'
@@ -137,7 +137,7 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
       setUserPercentile(percentile)
     })
     return () => unsubscribe()
-  }, [unlockedSlots])
+  }, [])
 
   // Firestore에서 앨범 데이터 구독
   useEffect(() => {
@@ -158,6 +158,7 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
     ]
 
     let unsubscribe: (() => void) | null = null
+    let foundAlbumId: string | null = null
 
     const tryFetchAlbum = async () => {
       for (const albumId of possibleIds) {
@@ -168,6 +169,7 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
           
           if (albumSnap.exists()) {
             console.log('Found album with ID:', albumId)
+            foundAlbumId = albumId
             const data = albumSnap.data()
             console.log('Album data:', data)
             
@@ -187,18 +189,6 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
                 })
                 setViewCount(typeof realtimeData.totalViews === 'number' ? realtimeData.totalViews : 0)
                 setError(null)
-                
-                // 조회수 증가 (한 번만 실행되도록)
-                if (!window.sessionStorage.getItem(`viewed-${albumId}`)) {
-                  updateDoc(albumRef, {
-                    totalViews: increment(1)
-                  }).then(() => {
-                    console.log('View count incremented')
-                    window.sessionStorage.setItem(`viewed-${albumId}`, 'true')
-                  }).catch(err => {
-                    console.error('Failed to increment view count:', err)
-                  })
-                }
               } else {
                 console.log('Album no longer exists')
                 setPhotos([])
@@ -207,6 +197,9 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
                 setError('앨범을 찾을 수 없습니다')
               }
             })
+            
+            // IP 기반 unique visitor 체크
+            await checkUniqueVisitor(albumId)
             
             setIsLoading(false)
             return // 성공하면 루프 종료
@@ -224,6 +217,50 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
       setError('앨범을 찾을 수 없습니다')
       setIsLoading(false)
     }
+
+    // IP 기반 unique visitor 체크 함수
+    const checkUniqueVisitor = async (albumId: string) => {
+      try {
+        // IP 주소 가져오기
+        const response = await fetch('https://api.ipify.org?format=json');
+        const { ip } = await response.json();
+        console.log('Visitor IP:', ip);
+        
+        // Firebase에서 이 IP가 이미 방문했는지 체크
+        const visitorRef = doc(db, 'visitors', `${albumId}_${ip}`);
+        const visitorSnap = await getDoc(visitorRef);
+        
+        if (!visitorSnap.exists()) {
+          // 새로운 방문자
+          console.log('New unique visitor detected');
+          await setDoc(visitorRef, { 
+            visitedAt: new Date().toISOString(),
+            albumId: albumId,
+            ip: ip
+          });
+          
+          // 조회수 증가
+          const albumRef = doc(db, 'albums', albumId);
+          await updateDoc(albumRef, { 
+            totalViews: increment(1) 
+          });
+          console.log('View count incremented for new visitor');
+        } else {
+          console.log('Returning visitor, no view count increment');
+        }
+      } catch (error) {
+        console.error('IP 체크 실패:', error);
+        // IP 체크 실패 시 기존 sessionStorage 방식으로 fallback
+        if (!window.sessionStorage.getItem(`viewed-${albumId}`)) {
+          const albumRef = doc(db, 'albums', albumId);
+          await updateDoc(albumRef, { 
+            totalViews: increment(1) 
+          });
+          window.sessionStorage.setItem(`viewed-${albumId}`, 'true');
+          console.log('View count incremented (fallback)');
+        }
+      }
+    };
 
     tryFetchAlbum()
 
