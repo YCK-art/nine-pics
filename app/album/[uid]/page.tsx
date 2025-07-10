@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { Eye } from 'lucide-react'
 import Image from 'next/image'
-import { getFirestore, doc, onSnapshot, getDoc } from 'firebase/firestore'
+import { getFirestore, doc, onSnapshot, getDoc, collection, getDocs } from 'firebase/firestore'
 import { initializeApp, getApps } from 'firebase/app'
 import ViewsModal from '../../components/ViewsModal'
 import Navbar from '../../components/Navbar'
@@ -39,9 +39,13 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
   const [viewCount, setViewCount] = useState(0)
   const [albumMeta, setAlbumMeta] = useState<{ totalViews: number, createdAt: string | null }>({ totalViews: 0, createdAt: null })
   const [showViewsModal, setShowViewsModal] = useState(false)
+  const [showSlotsModal, setShowSlotsModal] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showAccount, setShowAccount] = useState(false)
+  const [totalUsers, setTotalUsers] = useState<number>(0)
+  const [usersAt1Slot, setUsersAt1Slot] = useState<number>(0)
+  const [userPercentile, setUserPercentile] = useState<number>(0)
 
   // 슬롯 해제 로직
   const getUnlockedSlots = () => {
@@ -52,6 +56,25 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
     return 1
   }
   const unlockedSlots = getUnlockedSlots()
+
+  // 전체 사용자 통계 가져오기
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'users'), (usersSnapshot) => {
+      const users = usersSnapshot.docs.map(doc => doc.data())
+      setTotalUsers(users.length)
+      const at1 = users.filter(u => u.slotLevel === 1).length
+      setUsersAt1Slot(at1)
+      
+      // 현재 앨범 주인의 percentile 계산
+      const currentAlbumOwnerSlotLevel = unlockedSlots
+      const higher = users.filter(u => Number(u.slotLevel || 1) > currentAlbumOwnerSlotLevel).length
+      let percentile = Math.round((higher / users.length) * 100)
+      if (users.length === 1) percentile = 100
+      if (percentile < 1) percentile = 1
+      setUserPercentile(percentile)
+    })
+    return () => unsubscribe()
+  }, [unlockedSlots])
 
   // Firestore에서 앨범 데이터 구독
   useEffect(() => {
@@ -136,6 +159,20 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
     }
   }, [params.uid])
 
+  // 전역 이벤트 리스너 추가 (Slots, Views 모달용)
+  useEffect(() => {
+    const handleModalOpen = (e: any) => {
+      if (e.detail === 'slots') {
+        setShowSlotsModal(true)
+      } else if (e.detail === 'views') {
+        setShowViewsModal(true)
+      }
+    }
+
+    window.addEventListener('open-modal', handleModalOpen)
+    return () => window.removeEventListener('open-modal', handleModalOpen)
+  }, [])
+
   // 디버깅용 콘솔 로그
   useEffect(() => {
     console.log('Current state:', {
@@ -219,15 +256,60 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
           </div>
         </div>
         {/* 하단 안내 */}
-        <div className="text-center mt-8 text-gray-500 text-sm">
-          <p>이 앨범은 nine-pics에서 생성되었습니다</p>
-          <p className="mt-1">
-            <a href="https://www.ninepics.com" className="text-blue-400 hover:text-blue-200">
-              ninepics.com
-            </a>
-          </p>
+        <div className="text-center">
+          <div className="flex items-center justify-center space-x-4 text-sm text-white font-inconsolata">
+            <a href="/privacy" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
+            <span className="text-gray-500">|</span>
+            <a href="/terms" className="hover:text-gray-300 transition-colors">Terms of Service</a>
+            <span className="text-gray-500">|</span>
+            <a href="mailto:ninepics99@gmail.com" className="hover:text-gray-300 transition-colors">Contact</a>
+          </div>
         </div>
       </div>
+      
+      {/* Slots Modal */}
+      {showSlotsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowSlotsModal(false)}>
+          <div className="rounded-[48px] bg-white shadow-2xl p-10 w-[420px] max-w-full relative flex flex-col items-center text-black" onClick={(e) => e.stopPropagation()} style={{boxShadow:'0 8px 32px 0 rgba(31, 38, 135, 0.15)'}}>
+            <button className="absolute top-6 right-6 text-gray-400 hover:text-gray-600" onClick={()=>setShowSlotsModal(false)}>
+              <span style={{fontSize: 28, fontWeight: 700}}>&times;</span>
+            </button>
+            <div className="w-full flex flex-col items-center mb-8">
+              <div className="text-[38px] font-bold text-black mb-2 font-inconsolata">{unlockedSlots} Slot{unlockedSlots > 1 ? 's' : ''} Open</div>
+              <div className="flex flex-col gap-2 w-full">
+                <div className="flex items-center justify-between text-black text-lg font-inconsolata">
+                  <span>Total Users</span>
+                  <span className="font-bold">{totalUsers.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between text-black text-lg font-inconsolata">
+                  <span>Users at 1 Slot</span>
+                  <span className="font-bold">{usersAt1Slot.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between text-black text-lg font-inconsolata">
+                  <span>This User's Percentile</span>
+                  <span className="font-bold">Top {userPercentile}%</span>
+                </div>
+              </div>
+            </div>
+            {/* 미니 9개 프레임 */}
+            <div className="grid grid-cols-9 gap-2 mb-2">
+              {Array.from({ length: 9 }, (_, i) => (
+                <div
+                  key={i}
+                  className="w-6 h-8 rounded-[999px] border-2"
+                  style={
+                    i < unlockedSlots
+                      ? { background: slotColors[i], borderColor: slotColors[i] }
+                      : { background: '#f3f4f6', borderColor: '#e5e7eb', opacity: 0.5 }
+                  }
+                ></div>
+              ))}
+            </div>
+            <div className="text-xs text-black font-inconsolata">this user has {unlockedSlots} slot{unlockedSlots > 1 ? 's' : ''} open</div>
+          </div>
+        </div>
+      )}
+      
       {/* Views Modal */}
       {showViewsModal && (
         <ViewsModal
@@ -236,6 +318,7 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
           onClose={() => setShowViewsModal(false)}
         />
       )}
+      
       {showAccount && (
         <MyAccountModal
           email={''}
