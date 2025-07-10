@@ -21,6 +21,18 @@ const slotColors = [
   '#EAF4F8', '#D4F1E1', '#FFE3D2', '#F7CED7', '#E0D4F7', '#7D9EEB', '#8151D5', '#2D3A70', '#121212',
 ]
 
+const slotBorderColors = [
+  '#7D9EEB', // 1
+  '#AEE9C8', // 2
+  '#FFD1B3', // 3
+  '#F7B6C7', // 4
+  '#C7B6E6', // 5
+  '#7D9EEB', // 6
+  '#8151D5', // 7
+  '#2D3A70', // 8
+  '#121212', // 9
+];
+
 // Firebase 설정
 const firebaseConfig = {
   apiKey: "AIzaSyD0464CV_q1OwDzte8XOwyOaP6BlO6lm9A",
@@ -410,7 +422,7 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
                   className="w-6 h-8 rounded-[999px] border-2"
                   style={
                     i < unlockedSlots
-                      ? { background: slotColors[i], borderColor: slotColors[i] }
+                      ? { background: slotBorderColors[i], borderColor: slotBorderColors[i] }
                       : { background: '#f3f4f6', borderColor: '#e5e7eb', opacity: 0.5 }
                   }
                 ></div>
