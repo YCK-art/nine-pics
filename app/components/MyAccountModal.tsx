@@ -12,8 +12,8 @@ export default function MyAccountModal({ email, onClose, onLogout }: { email: st
     const auth = getAuth();
     const uid = auth.currentUser?.uid;
     if (uid) {
-      userLink = `https://www.ninepics.com/${uid}`;
-      displayLink = `ninepics.com/${uid}`;
+      userLink = `https://www.ninepics.com/album/${uid}`;
+      displayLink = `ninepics.com/album/${uid}`;
       if (displayLink.length > 18) {
         displayLink = displayLink.substring(0, 18) + '...';
       }
@@ -39,8 +39,8 @@ export default function MyAccountModal({ email, onClose, onLogout }: { email: st
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="rounded-[48px] bg-white shadow-2xl p-0 w-[420px] max-w-full relative flex flex-col items-center" style={{boxShadow:'0 8px 32px 0 rgba(31, 38, 135, 0.15)'}}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="rounded-[48px] bg-white shadow-2xl p-0 w-[420px] max-w-full relative flex flex-col items-center" onClick={(e) => e.stopPropagation()} style={{boxShadow:'0 8px 32px 0 rgba(31, 38, 135, 0.15)'}}>
         <button className="absolute top-6 right-6 text-gray-400 hover:text-gray-600" onClick={onClose}>
           <span style={{fontSize: 28, fontWeight: 700}}>&times;</span>
         </button>

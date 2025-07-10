@@ -23,8 +23,8 @@ export default function ViewsModal({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="rounded-[48px] bg-white shadow-2xl p-12 w-[420px] max-w-full relative flex flex-col items-center text-black font-inconsolata" style={{boxShadow:'0 8px 32px 0 rgba(31, 38, 135, 0.15)'}}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="rounded-[48px] bg-white shadow-2xl p-12 w-[420px] max-w-full relative flex flex-col items-center text-black font-inconsolata" onClick={(e) => e.stopPropagation()} style={{boxShadow:'0 8px 32px 0 rgba(31, 38, 135, 0.15)'}}>
         <button className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 text-3xl font-bold" onClick={onClose}>
           ×
         </button>

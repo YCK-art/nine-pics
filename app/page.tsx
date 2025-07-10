@@ -416,8 +416,8 @@ export default function Home() {
       )}
       {/* Slots 모달 */}
       {showSlotsModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="rounded-[48px] bg-white shadow-2xl p-10 w-[420px] max-w-full relative flex flex-col items-center text-black" style={{boxShadow:'0 8px 32px 0 rgba(31, 38, 135, 0.15)'}}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowSlotsModal(false)}>
+          <div className="rounded-[48px] bg-white shadow-2xl p-10 w-[420px] max-w-full relative flex flex-col items-center text-black" onClick={(e) => e.stopPropagation()} style={{boxShadow:'0 8px 32px 0 rgba(31, 38, 135, 0.15)'}}>
             <button className="absolute top-6 right-6 text-gray-400 hover:text-gray-600" onClick={()=>setShowSlotsModal(false)}><X size={28}/></button>
             <div className="w-full flex flex-col items-center mb-8">
               <div className="text-[38px] font-bold text-black mb-2 font-inconsolata">1 Slot Open</div>
@@ -559,21 +559,16 @@ export default function Home() {
           />
         </div>
 
-        {/* 공유 버튼 */}
-        {albumId && photos.length > 0 && (
-          <div className="text-center">
-            <button
-              onClick={shareAlbum}
-              className="inline-flex items-center px-6 py-3 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors font-inconsolata"
-            >
-              <Share2 className="w-5 h-5 mr-2" />
-              Share Album
-            </button>
-            <p className="text-sm text-gray-400 mt-2 font-inconsolata">
-              Link: {`https://www.ninepics.com/album/${albumId}`}
-            </p>
+        {/* Privacy Policy, Terms of Service, Contact 링크들 */}
+        <div className="text-center">
+          <div className="flex items-center justify-center space-x-4 text-sm text-white font-inconsolata">
+            <a href="/privacy" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
+            <span className="text-gray-500">|</span>
+            <a href="/terms" className="hover:text-gray-300 transition-colors">Terms of Service</a>
+            <span className="text-gray-500">|</span>
+            <a href="/contact" className="hover:text-gray-300 transition-colors">Contact</a>
           </div>
-        )}
+        </div>
       </div>
     </div>
   )
