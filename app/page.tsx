@@ -471,13 +471,21 @@ export default function Home() {
         <div className="container mx-auto px-4 py-8 flex-1 flex flex-col">
           {/* 사진 그리드 */}
           <div className="bg-black rounded-2xl shadow-lg p-6 mb-8 flex-1">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
               {Array.from({ length: 9 }, (_, index) => {
                 const photo = photos.slice(0, unlockedSlots)[index]
                 const isUnlocked = index < unlockedSlots
                 const isEmpty = !photo
                 const bgColor = slotColors[index]
                 const glow = slotGlow[index]
+
+                // 간결한 라벨
+                const getShortSlotLabel = (idx: number) => {
+                  if (idx === 0) return '50views';
+                  if (idx === 1) return '100views';
+                  if (idx === 2) return '1000views';
+                  return 'Locked';
+                };
 
                 return (
                   <div
@@ -487,6 +495,7 @@ export default function Home() {
                       transition: 'box-shadow 0.3s, border 0.3s',
                     }}
                     className={`aspect-[4/5] rounded-[999px] overflow-hidden flex items-center justify-center transition-all duration-300 cursor-pointer
+                      w-24 h-32 sm:w-28 sm:h-36 md:w-32 md:h-40
                       ${isEmpty
                         ? isUnlocked
                           ? ''
@@ -516,7 +525,7 @@ export default function Home() {
                         />
                         <button
                           onClick={(e) => { e.stopPropagation(); removePhoto(photo.id) }}
-                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs"
                         >
                           ×
                         </button>
@@ -524,27 +533,25 @@ export default function Home() {
                     ) : isUnlocked ? (
                       isUploading ? (
                         <div className="text-center pointer-events-none">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-                          <p className="text-sm text-white font-inconsolata">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto mb-1"></div>
+                          <p className="text-xs text-white font-inconsolata">
                             Loading
                             <span className="loading-dot">.</span>
                             <span className="loading-dot">.</span>
                             <span className="loading-dot">.</span>
                           </p>
-                          {/* 디버깅용 */}
-                          <div className="text-xs text-white opacity-50">isUploading: {isUploading.toString()}</div>
                         </div>
                       ) : (
                         <div className="text-center pointer-events-none">
-                          <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                          <p className="text-sm text-gray-500 font-inconsolata">Add Photo</p>
+                          <Upload className="w-6 h-6 text-gray-400 mx-auto mb-1" />
+                          <p className="text-xs text-gray-500 font-inconsolata">Add Photo</p>
                         </div>
                       )
                     ) : (
                       <div className="text-center pointer-events-none">
-                        <Eye className="w-8 h-8 text-gray-700 mx-auto mb-2" />
-                        <p className="text-sm text-gray-700 font-inconsolata">
-                          {getSlotLabel(index)}
+                        <Eye className="w-6 h-6 text-gray-700 mx-auto mb-1" />
+                        <p className="text-xs text-gray-700 font-inconsolata">
+                          {getShortSlotLabel(index)}
                         </p>
                       </div>
                     )}
@@ -566,7 +573,7 @@ export default function Home() {
 
           {/* Privacy Policy, Terms of Service, Contact 링크들 */}
           <div className="text-center mt-auto pb-4 sm:pb-8">
-            <div className="flex items-center justify-center space-x-4 text-sm text-white font-inconsolata">
+            <div className="flex items-center justify-center space-x-4 text-xs sm:text-sm md:text-base text-white font-inconsolata">
               <a href="/privacy" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
               <span className="text-gray-500">|</span>
               <a href="/terms" className="hover:text-gray-300 transition-colors">Terms of Service</a>
