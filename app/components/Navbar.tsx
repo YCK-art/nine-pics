@@ -17,7 +17,6 @@ export default function Navbar({ onUserChanged, albumUid }: { onUserChanged?: ()
   const [albumOwnerEmail, setAlbumOwnerEmail] = useState<string>('');
   const [isOwner, setIsOwner] = useState(true);
 
-  // Firebase Auth 상태 감지
   useEffect(() => {
     const auth = getAuth()
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -35,17 +34,12 @@ export default function Navbar({ onUserChanged, albumUid }: { onUserChanged?: ()
     return () => unsubscribe()
   }, [onUserChanged])
 
-  // 앨범 주인 확인 및 닉네임 설정
   useEffect(() => {
     if (albumUid && userUid) {
       const isCurrentUserOwner = albumUid === userUid;
       setIsOwner(isCurrentUserOwner);
-      
       if (!isCurrentUserOwner) {
-        // 다른 유저의 앨범일 때, 앨범 주인의 이메일을 가져와서 닉네임으로 사용
-        // 실제로는 Firestore에서 해당 유저의 이메일을 가져와야 하지만,
-        // 현재는 URL의 UID를 기반으로 임시 닉네임 생성
-        const tempNickname = albumUid.substring(0, 8); // UID의 앞 8자리를 닉네임으로 사용
+        const tempNickname = albumUid.substring(0, 8);
         setAlbumOwnerEmail(tempNickname);
       }
     } else {
@@ -54,27 +48,27 @@ export default function Navbar({ onUserChanged, albumUid }: { onUserChanged?: ()
     }
   }, [albumUid, userUid]);
 
-  // 로그인/회원가입 성공 시 콜백
   const handleSignUpSuccess = () => {
     setShowSignUp(false)
     if (onUserChanged) onUserChanged()
   }
 
   const handleLogout = () => {
+    // Firebase 로그아웃은 MyAccountModal에서 처리되므로
+    // 여기서는 상태만 초기화
     setUserEmail('')
+    setUserUid('')
+    setIsLoggedIn(false)
   }
 
-  // Link 메뉴 클릭 핸들러
   const handleLinkClick = () => {
     if (!isLoggedIn) {
-      // 로그인 안내 메시지 표시
       window.dispatchEvent(new CustomEvent('show-login-toast'));
       return;
     }
     setShowLinkModal(true);
   };
 
-  // 계정 버튼 텍스트 결정
   const getAccountButtonText = () => {
     if (isOwner) {
       return 'My Account';
@@ -89,42 +83,69 @@ export default function Navbar({ onUserChanged, albumUid }: { onUserChanged?: ()
         <div className="flex items-center justify-between px-4 sm:px-8 py-4 bg-black rounded-full shadow-md mb-8 max-w-3xl w-full border border-gray-700 border-opacity-40 min-w-0" style={{borderRadius: '9999px', pointerEvents: 'auto'}}>
           {/* 로고 */}
           <a href="/" className="flex items-center font-bold text-3xl sm:text-5xl text-white font-arsenale whitespace-nowrap min-w-0 flex-shrink-0 cursor-pointer">ninepics</a>
-          {/* 메뉴 */}
-          <div className="flex space-x-4 sm:space-x-8 text-sm sm:text-base font-medium text-gray-200 font-inconsolata min-w-0 overflow-hidden">
-            <button
-              className="hover:text-primary transition-colors bg-transparent border-none outline-none p-0 m-0 cursor-pointer whitespace-nowrap min-w-0 flex-shrink"
-              style={{background:'none'}}
-              onClick={() => window.dispatchEvent(new CustomEvent('open-modal', { detail: 'slots' }))}
-            >
-              Slots
-            </button>
-            <a
-              href="#"
-              className="hover:text-primary transition-colors whitespace-nowrap min-w-0 flex-shrink"
-              onClick={e => {
-                e.preventDefault();
-                window.dispatchEvent(new CustomEvent('open-modal', { detail: 'views' }));
-              }}
-            >
-              Views
-            </a>
-            <a
-              href="#"
-              className="hover:text-primary transition-colors whitespace-nowrap min-w-0 flex-shrink"
-              onClick={e => {
-                e.preventDefault();
-                handleLinkClick();
-              }}
-            >
-              Link
-            </a>
-            <button
-              className="hover:text-primary transition-colors bg-transparent border-none outline-none p-0 m-0 cursor-pointer whitespace-nowrap min-w-0 flex-shrink"
-              style={{background:'none'}}
-              onClick={() => setShowAccount(true)}
-            >
-              {getAccountButtonText()}
-            </button>
+          {/* 가운데 메뉴 */}
+          <div className="flex-1 flex items-center justify-center">
+            <div className="flex space-x-8 text-sm sm:text-base font-medium text-gray-200 font-inconsolata">
+              <button
+                className="hover:text-primary transition-colors bg-transparent border-none outline-none p-0 m-0 cursor-pointer whitespace-nowrap min-w-0 flex-shrink"
+                style={{background:'none'}}
+                onClick={() => window.dispatchEvent(new CustomEvent('open-modal', { detail: 'slots' }))}
+              >
+                Slots
+              </button>
+              <a
+                href="#"
+                className="hover:text-primary transition-colors whitespace-nowrap min-w-0 flex-shrink"
+                onClick={e => {
+                  e.preventDefault();
+                  window.dispatchEvent(new CustomEvent('open-modal', { detail: 'views' }));
+                }}
+              >
+                Views
+              </a>
+              <a
+                href="#"
+                className="hover:text-primary transition-colors whitespace-nowrap min-w-0 flex-shrink"
+                onClick={e => {
+                  e.preventDefault();
+                  handleLinkClick();
+                }}
+              >
+                Link
+              </a>
+            </div>
+          </div>
+          {/* 오른쪽 계정 버튼 (흰색 모듈) */}
+          <div className="flex items-center ml-4 space-x-2">
+            {isLoggedIn ? (
+              <button
+                className="px-7 py-2 rounded-full bg-white text-black font-semibold text-xs sm:text-base whitespace-nowrap min-w-0 shadow font-inconsolata"
+                onClick={()=>setShowAccount(true)}
+              >
+                {getAccountButtonText()}
+              </button>
+            ) : (
+              <>
+                <button
+                  className="px-5 py-2 rounded-full bg-[#f1f2ee] text-black font-bold text-sm whitespace-nowrap min-w-0 shadow font-inconsolata"
+                  onClick={() => {
+                    setModalType('login');
+                    setShowSignUp(true);
+                  }}
+                >
+                  Log in
+                </button>
+                <button
+                  className="px-5 py-2 rounded-full bg-[#232733] text-white font-bold text-sm whitespace-nowrap min-w-0 shadow font-inconsolata"
+                  onClick={() => {
+                    setModalType('signup');
+                    setShowSignUp(true);
+                  }}
+                >
+                  Sign Up
+                </button>
+              </>
+            )}
           </div>
         </div>
       </nav>

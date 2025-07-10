@@ -408,7 +408,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-black flex flex-col">
       {/* Toast 메시지 */}
       {showLoginToast && (
         <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
@@ -467,110 +467,112 @@ export default function Home() {
         />
       )}
       <Navbar albumUid={userUid} />
-      <div className="container mx-auto px-4 py-8">
-        {/* 사진 그리드 */}
-        <div className="bg-black rounded-2xl shadow-lg p-6 mb-8">
-          <div className="grid grid-cols-3 gap-4">
-            {Array.from({ length: 9 }, (_, index) => {
-              const photo = photos.slice(0, unlockedSlots)[index]
-              const isUnlocked = index < unlockedSlots
-              const isEmpty = !photo
-              const bgColor = slotColors[index]
-              const glow = slotGlow[index]
+      <div className="flex-1 flex flex-col">
+        <div className="container mx-auto px-4 py-8 flex-1 flex flex-col">
+          {/* 사진 그리드 */}
+          <div className="bg-black rounded-2xl shadow-lg p-6 mb-8 flex-1">
+            <div className="grid grid-cols-3 gap-4">
+              {Array.from({ length: 9 }, (_, index) => {
+                const photo = photos.slice(0, unlockedSlots)[index]
+                const isUnlocked = index < unlockedSlots
+                const isEmpty = !photo
+                const bgColor = slotColors[index]
+                const glow = slotGlow[index]
 
-              return (
-                <div
-                  key={index}
-                  style={{
-                    backgroundColor: isUnlocked ? bgColor : '#fff',
-                    transition: 'box-shadow 0.3s, border 0.3s',
-                  }}
-                  className={`aspect-[4/5] rounded-[999px] overflow-hidden flex items-center justify-center transition-all duration-300 cursor-pointer
-                    ${isEmpty
-                      ? isUnlocked
-                        ? ''
-                        : 'opacity-50 cursor-default'
-                      : ''}
-                    ${shakeIndex === index ? 'shake' : ''}
-                  `}
-                  onClick={() => handleFrameClick(isUnlocked, index)}
-                  onMouseEnter={e => {
-                    if (isUnlocked) {
-                      (e.currentTarget as HTMLDivElement).style.boxShadow = glow
-                      ;(e.currentTarget as HTMLDivElement).style.border = `6px solid ${bgColor}`
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    (e.currentTarget as HTMLDivElement).style.boxShadow = ''
-                    ;(e.currentTarget as HTMLDivElement).style.border = 'none'
-                  }}
-                >
-                  {photo ? (
-                    <div className="relative w-full h-full group rounded-[999px] overflow-hidden">
-                      <Image
-                        src={photo.url}
-                        alt={photo.alt}
-                        fill
-                        className="object-cover"
-                      />
-                      <button
-                        onClick={(e) => { e.stopPropagation(); removePhoto(photo.id) }}
-                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ) : isUnlocked ? (
-                    isUploading ? (
-                      <div className="text-center pointer-events-none">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-                        <p className="text-sm text-white font-inconsolata">
-                          Loading
-                          <span className="loading-dot">.</span>
-                          <span className="loading-dot">.</span>
-                          <span className="loading-dot">.</span>
-                        </p>
-                        {/* 디버깅용 */}
-                        <div className="text-xs text-white opacity-50">isUploading: {isUploading.toString()}</div>
+                return (
+                  <div
+                    key={index}
+                    style={{
+                      backgroundColor: isUnlocked ? bgColor : '#fff',
+                      transition: 'box-shadow 0.3s, border 0.3s',
+                    }}
+                    className={`aspect-[4/5] rounded-[999px] overflow-hidden flex items-center justify-center transition-all duration-300 cursor-pointer
+                      ${isEmpty
+                        ? isUnlocked
+                          ? ''
+                          : 'opacity-50 cursor-default'
+                        : ''}
+                      ${shakeIndex === index ? 'shake' : ''}
+                    `}
+                    onClick={() => handleFrameClick(isUnlocked, index)}
+                    onMouseEnter={e => {
+                      if (isUnlocked) {
+                        (e.currentTarget as HTMLDivElement).style.boxShadow = glow
+                        ;(e.currentTarget as HTMLDivElement).style.border = `6px solid ${bgColor}`
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      (e.currentTarget as HTMLDivElement).style.boxShadow = ''
+                      ;(e.currentTarget as HTMLDivElement).style.border = 'none'
+                    }}
+                  >
+                    {photo ? (
+                      <div className="relative w-full h-full group rounded-[999px] overflow-hidden">
+                        <Image
+                          src={photo.url}
+                          alt={photo.alt}
+                          fill
+                          className="object-cover"
+                        />
+                        <button
+                          onClick={(e) => { e.stopPropagation(); removePhoto(photo.id) }}
+                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          ×
+                        </button>
                       </div>
+                    ) : isUnlocked ? (
+                      isUploading ? (
+                        <div className="text-center pointer-events-none">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+                          <p className="text-sm text-white font-inconsolata">
+                            Loading
+                            <span className="loading-dot">.</span>
+                            <span className="loading-dot">.</span>
+                            <span className="loading-dot">.</span>
+                          </p>
+                          {/* 디버깅용 */}
+                          <div className="text-xs text-white opacity-50">isUploading: {isUploading.toString()}</div>
+                        </div>
+                      ) : (
+                        <div className="text-center pointer-events-none">
+                          <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                          <p className="text-sm text-gray-500 font-inconsolata">Add Photo</p>
+                        </div>
+                      )
                     ) : (
                       <div className="text-center pointer-events-none">
-                        <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                        <p className="text-sm text-gray-500 font-inconsolata">Add Photo</p>
+                        <Eye className="w-8 h-8 text-gray-700 mx-auto mb-2" />
+                        <p className="text-sm text-gray-700 font-inconsolata">
+                          {getSlotLabel(index)}
+                        </p>
                       </div>
-                    )
-                  ) : (
-                    <div className="text-center pointer-events-none">
-                      <Eye className="w-8 h-8 text-gray-700 mx-auto mb-2" />
-                      <p className="text-sm text-gray-700 font-inconsolata">
-                        {getSlotLabel(index)}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+            {/* 숨겨진 파일 업로드 input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              className="hidden"
+              disabled={isUploading}
+              style={{ display: 'none' }}
+            />
           </div>
-          {/* 숨겨진 파일 업로드 input */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleFileUpload}
-            className="hidden"
-            disabled={isUploading}
-            style={{ display: 'none' }}
-          />
-        </div>
 
-        {/* Privacy Policy, Terms of Service, Contact 링크들 */}
-        <div className="text-center">
-          <div className="flex items-center justify-center space-x-4 text-sm text-white font-inconsolata">
-            <a href="/privacy" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
-            <span className="text-gray-500">|</span>
-            <a href="/terms" className="hover:text-gray-300 transition-colors">Terms of Service</a>
-            <span className="text-gray-500">|</span>
-            <a href="mailto:ninepics99@gmail.com" className="hover:text-gray-300 transition-colors">Contact</a>
+          {/* Privacy Policy, Terms of Service, Contact 링크들 */}
+          <div className="text-center mt-auto pb-4 sm:pb-8">
+            <div className="flex items-center justify-center space-x-4 text-sm text-white font-inconsolata">
+              <a href="/privacy" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
+              <span className="text-gray-500">|</span>
+              <a href="/terms" className="hover:text-gray-300 transition-colors">Terms of Service</a>
+              <span className="text-gray-500">|</span>
+              <a href="mailto:ninepics99@gmail.com" className="hover:text-gray-300 transition-colors">Contact</a>
+            </div>
           </div>
         </div>
       </div>
