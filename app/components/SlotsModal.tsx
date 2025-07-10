@@ -32,7 +32,7 @@ export default function SlotsModal({
               <span className="font-bold">{totalUsers.toLocaleString()}</span>
             </div>
             <div className="flex items-center justify-between text-black text-lg font-inconsolata">
-              <span>Users at 1 Slot</span>
+              <span>Users at {unlockedSlots} Slot{unlockedSlots > 1 ? 's' : ''}</span>
               <span className="font-bold">{usersAt1Slot.toLocaleString()}</span>
             </div>
             <div className="flex items-center justify-between text-black text-lg font-inconsolata">
@@ -55,7 +55,7 @@ export default function SlotsModal({
             ></div>
           ))}
         </div>
-        <div className="text-xs text-black font-inconsolata">the {unlockedSlots}st slot is open</div>
+        <div className="text-xs text-black font-inconsolata">the {unlockedSlots}{unlockedSlots === 1 ? 'st' : unlockedSlots === 2 ? 'nd' : unlockedSlots === 3 ? 'rd' : 'th'} slot{unlockedSlots > 1 ? 's are' : ' is'} open</div>
       </div>
     </div>
   );

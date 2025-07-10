@@ -125,19 +125,33 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
     const unsubscribe = onSnapshot(collection(db, 'users'), (usersSnapshot) => {
       const users = usersSnapshot.docs.map(doc => doc.data())
       setTotalUsers(users.length)
-      const at1 = users.filter(u => u.slotLevel === 1).length
-      setUsersAt1Slot(at1)
       
-      // 현재 앨범 주인의 percentile 계산
+      // 디버깅: 현재 unlocked 슬롯 수와 사용자 데이터 확인
+      console.log('Debug - Current unlocked slots:', unlockedSlots)
+      console.log('Debug - Users data:', users)
+      
+      // 현재 앨범 주인의 unlocked 슬롯 수에 맞춰서 계산
+      const currentUnlockedSlots = unlockedSlots
+      const usersAtCurrentSlot = users.filter(u => {
+        const userSlotLevel = Number(u.slotLevel || 1)
+        console.log('Debug - User slotLevel:', u.uid, userSlotLevel, '>=', currentUnlockedSlots, '?', userSlotLevel >= currentUnlockedSlots)
+        return userSlotLevel >= currentUnlockedSlots
+      }).length
+      console.log('Debug - Users at current slot:', usersAtCurrentSlot)
+      setUsersAt1Slot(usersAtCurrentSlot)
+      
+      // 현재 앨범 주인의 percentile 계산 (현재 unlocked 슬롯 기준)
       const currentAlbumOwnerSlotLevel = unlockedSlots
       const higher = users.filter(u => Number(u.slotLevel || 1) > currentAlbumOwnerSlotLevel).length
+      const sameOrHigher = users.filter(u => Number(u.slotLevel || 1) >= currentAlbumOwnerSlotLevel).length
       let percentile = Math.round((higher / users.length) * 100)
-      if (users.length === 1) percentile = 100
+      if (users.length === 1) percentile = 0
       if (percentile < 1) percentile = 1
+      console.log('Debug - Percentile calculation:', { higher, sameOrHigher, total: users.length, percentile })
       setUserPercentile(percentile)
     })
     return () => unsubscribe()
-  }, [])
+  }, [unlockedSlots])
 
   // Firestore에서 앨범 데이터 구독
   useEffect(() => {
