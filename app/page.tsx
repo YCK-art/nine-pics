@@ -168,25 +168,28 @@ export default function Home() {
       console.log('Debug - Users at current slot:', usersAtCurrentSlot)
       setUsersAt1Slot(usersAtCurrentSlot)
       
-      // 내 percentile 계산 (현재 unlocked 슬롯 기준)
-      const auth = getAuth()
-      const currentUser = auth.currentUser
-      if (currentUser) {
-        const myData = users.find(u => u.uid === currentUser.uid)
-        console.log('Debug - My data:', myData)
-        if (myData && myData.slotLevel != null) {
-          const mySlot = Number(myData.slotLevel)
-          // 현재 unlocked 슬롯보다 높은 슬롯을 가진 유저 수 계산
-          const higher = users.filter(u => Number(u.slotLevel || 1) > currentUnlockedSlots).length
-          let percentile = 100 - Math.round((higher / users.length) * 100)
-          if (users.length === 1) percentile = 100
-          if (percentile < 1) percentile = 1
-          console.log('Debug - Percentile calculation:', { higher, total: users.length, percentile })
-          setUserPercentile(percentile)
-        } else if (users.length === 1) {
-          setUserPercentile(100)
-        }
-      }
+                // 내 percentile 계산 (현재 unlocked 슬롯 기준)
+          const auth = getAuth()
+          const currentUser = auth.currentUser
+          if (currentUser) {
+            const myData = users.find(u => u.uid === currentUser.uid)
+            console.log('Debug - My data:', myData)
+            if (myData && myData.slotLevel != null) {
+              const mySlot = Number(myData.slotLevel)
+              // 현재 unlocked 슬롯보다 높은 슬롯을 가진 유저 수 계산
+              const higher = users.filter(u => Number(u.slotLevel || 1) > currentUnlockedSlots).length
+              // 나와 같은 슬롯 이상을 가진 유저 수 계산
+              const sameOrHigher = users.filter(u => Number(u.slotLevel || 1) >= currentUnlockedSlots).length
+              // percentile = (나보다 높은 슬롯을 가진 사람 수 / 전체) * 100
+              let percentile = Math.round((higher / users.length) * 100)
+              if (users.length === 1) percentile = 0
+              if (percentile < 1) percentile = 1
+              console.log('Debug - Percentile calculation:', { higher, sameOrHigher, total: users.length, percentile })
+              setUserPercentile(percentile)
+            } else if (users.length === 1) {
+              setUserPercentile(0)
+            }
+          }
     })
     return () => unsubscribe()
   }, [unlockedSlots])
