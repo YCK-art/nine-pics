@@ -576,7 +576,8 @@ export default function Home() {
                               />
                               <button
                                 onClick={(e) => { e.stopPropagation(); removePhoto(photo.id) }}
-                                className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto"
+                                className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 hover:opacity-100 focus:opacity-100 transition-opacity pointer-events-auto z-10"
+                                style={{ pointerEvents: 'auto' }}
                               >
                                 ×
                               </button>
@@ -663,7 +664,7 @@ export default function Home() {
                         {/* PC: 삭제 버튼 (마우스 오버 시만 보임, 모바일은 숨김) */}
                         <button
                           onClick={e => { e.stopPropagation(); removePhoto(photo.id); }}
-                          className="hidden md:flex absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 hover:opacity-100 focus:opacity-100 transition-opacity pointer-events-auto z-10"
                           style={{ pointerEvents: 'auto' }}
                         >
                           ×

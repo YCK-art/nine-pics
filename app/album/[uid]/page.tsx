@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from 'react'
-import { Eye } from 'lucide-react'
+import { Eye, Upload } from 'lucide-react'
 import Image from 'next/image'
 import { getFirestore, doc, onSnapshot, getDoc, collection, getDocs, increment, updateDoc } from 'firebase/firestore'
 import { initializeApp, getApps } from 'firebase/app'
@@ -107,15 +107,16 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
 
   // 슬롯 해제 로직
   const getUnlockedSlots = () => {
-    if (viewCount >= 30000000) return 9
-    if (viewCount >= 15000000) return 8
-    if (viewCount >= 5000000) return 7
-    if (viewCount >= 1000000) return 6
-    if (viewCount >= 20000) return 5
-    if (viewCount >= 20000) return 5
-    if (viewCount >= 1000) return 3
-    if (viewCount >= 100) return 2
-    return 1
+    const v = typeof viewCount === 'number' && !isNaN(viewCount) ? viewCount : 0;
+    if (v >= 30000000) return 9;
+    if (v >= 15000000) return 8;
+    if (v >= 5000000) return 7;
+    if (v >= 1000000) return 6;
+    if (v >= 200000) return 5;
+    if (v >= 20000) return 4;
+    if (v >= 1000) return 3;
+    if (v >= 100) return 2;
+    return 1;
   }
   const unlockedSlots = getUnlockedSlots()
 
@@ -181,10 +182,10 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
                 
                 setPhotos(photosArray.slice(0, getUnlockedSlots()))
                 setAlbumMeta({
-                  totalViews: realtimeData.totalViews || realtimeData.viewCount || 0,
+                  totalViews: typeof realtimeData.totalViews === 'number' ? realtimeData.totalViews : 0,
                   createdAt: realtimeData.createdAt || null,
                 })
-                setViewCount(realtimeData.totalViews || realtimeData.viewCount || 0)
+                setViewCount(typeof realtimeData.totalViews === 'number' ? realtimeData.totalViews : 0)
                 setError(null)
                 
                 // 조회수 증가 (한 번만 실행되도록)
@@ -416,6 +417,14 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
                         setTimeout(() => setShakeIndex(null), 400);
                         return;
                       }
+                      // 업로드: 열린 슬롯 & 비어있을 때
+                      if (isUnlocked && !hasPhoto) {
+                        // 업로드 input 트리거 (홈화면과 동일)
+                        (window as any).clickedSlotIndex = index;
+                        const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+                        if (input) input.click();
+                        return;
+                      }
                       // PC에서만 사진 클릭 시 확대
                       if (!isMobile && hasPhoto) {
                         setEnlargedPhoto(photo);
@@ -443,6 +452,11 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
                           fill
                           className="object-cover"
                         />
+                      </div>
+                    ) : isUnlocked ? (
+                      <div className="text-center">
+                        <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                        <p className="text-sm text-gray-500 font-inconsolata">Upload Photo</p>
                       </div>
                     ) : (
                       <div className="text-center pointer-events-none">
