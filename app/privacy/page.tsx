@@ -1,42 +1,141 @@
-export default function PrivacyPolicy() {
+export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-black text-white">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="bg-white rounded-2xl p-8 shadow-lg">
-          <h1 className="text-4xl font-bold text-gray-900 mb-8 font-inconsolata">Privacy Policy</h1>
-          
-          <div className="prose prose-lg max-w-none">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">개인정보 처리방침</h2>
-            <p className="text-gray-600 mb-6">
-              nine-pics는 사용자의 개인정보를 보호하기 위해 최선을 다하고 있습니다.
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-4 font-inconsolata">Privacy Policy</h1>
+          <p className="text-gray-400">Effective: July 10, 2025</p>
+        </div>
+
+        <div className="space-y-8 text-gray-300 leading-relaxed">
+          <div>
+            <p className="mb-4">
+              ninepics ("we," "our," or "us") values your privacy and collects only the minimum personal information necessary to provide and improve our service. This Privacy Policy explains what information we collect, how we use and protect it, and your rights.
             </p>
-            
-            <h3 className="text-xl font-bold text-gray-800 mb-3">수집하는 정보</h3>
-            <ul className="list-disc pl-6 mb-6 text-gray-600">
-              <li>이메일 주소</li>
-              <li>프로필 정보</li>
-              <li>업로드된 이미지</li>
-              <li>서비스 이용 기록</li>
-            </ul>
-            
-            <h3 className="text-xl font-bold text-gray-800 mb-3">정보 사용 목적</h3>
-            <ul className="list-disc pl-6 mb-6 text-gray-600">
-              <li>서비스 제공 및 개선</li>
-              <li>고객 지원</li>
-              <li>보안 및 사기 방지</li>
-            </ul>
-            
-            <h3 className="text-xl font-bold text-gray-800 mb-3">정보 보호</h3>
-            <p className="text-gray-600 mb-6">
-              모든 개인정보는 암호화되어 안전하게 저장되며, 무단 접근을 방지하기 위한 보안 조치를 취하고 있습니다.
-            </p>
-            
-            <div className="mt-8 pt-6 border-t border-gray-200">
-              <p className="text-sm text-gray-500">
-                최종 업데이트: 2024년 1월 1일
-              </p>
-            </div>
           </div>
+
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-4 font-inconsolata">1. Scope</h2>
+            <p>
+              This Privacy Policy applies to all users of the ninepics website and related services ("Service").
+            </p>
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-4 font-inconsolata">2. Information We Collect</h2>
+            <p className="mb-4">
+              We collect the following information to provide and improve our Service:
+            </p>
+            <ul className="list-disc list-inside space-y-2 ml-4">
+              <li><strong>Account Information:</strong> Name, email address, and profile picture provided by Google when you log in</li>
+              <li><strong>Usage Data:</strong> Access logs, IP address, browser information, and traffic data</li>
+              <li><strong>Uploaded Content:</strong> Images you upload to the Service</li>
+            </ul>
+            <p className="mt-4">
+              We do not collect passwords, financial information, or sensitive personal data.
+            </p>
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-4 font-inconsolata">3. How We Use Personal Information</h2>
+            <p className="mb-4">
+              We use the collected information solely for the following purposes:
+            </p>
+            <ul className="list-disc list-inside space-y-2 ml-4">
+              <li>Providing and operating the Service</li>
+              <li>Improving service quality and user experience</li>
+              <li>Strengthening security and detecting errors</li>
+              <li>Complying with legal obligations</li>
+            </ul>
+            <p className="mt-4">
+              We do not sell or share your personal information with third parties, except where required by law.
+            </p>
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-4 font-inconsolata">4. Third-Party Disclosure</h2>
+            <p>
+              We do not disclose your personal information to third parties except when required to do so by applicable laws or legal processes.
+            </p>
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-4 font-inconsolata">5. Data Retention</h2>
+            <p className="mb-4">
+              We retain personal information only for as long as necessary to fulfill the purposes stated above or to comply with legal obligations.
+            </p>
+            <p>
+              When you request to delete your account, we will also delete your related data without undue delay.
+            </p>
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-4 font-inconsolata">6. Security</h2>
+            <p className="mb-4">
+              We implement reasonable technical and administrative measures to protect your personal information.
+            </p>
+            <p>
+              However, due to the nature of the Internet, we cannot guarantee complete security, and we are not responsible for breaches beyond our reasonable control as permitted by law.
+            </p>
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-4 font-inconsolata">7. Your Rights</h2>
+            <p className="mb-4">You have the right to:</p>
+            <ul className="list-disc list-inside space-y-2 ml-4">
+              <li>Request access to your personal information</li>
+              <li>Request correction or deletion of your personal information</li>
+              <li>Request suspension of processing of your personal information</li>
+            </ul>
+            <p className="mt-4">
+              To exercise your rights, please contact us by email:
+            </p>
+            <p className="mt-2">
+              📧 <a href="mailto:ninepics99@gmail.com" className="text-blue-400 hover:text-blue-300">ninepics99@gmail.com</a>
+            </p>
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-4 font-inconsolata">8. Children's Privacy</h2>
+            <p className="mb-4">
+              Our Service is not intended for use by anyone under the age of 18.
+            </p>
+            <p className="mb-4">
+              We do not knowingly collect personal information from children.
+            </p>
+            <p>
+              If we become aware that we have collected personal information from a child, we will promptly delete it.
+            </p>
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-4 font-inconsolata">9. Changes to This Policy</h2>
+            <p className="mb-4">
+              We may update this Privacy Policy from time to time to reflect changes in laws or our Service.
+            </p>
+            <p>
+              Any significant changes will be announced on our website.
+            </p>
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-4 font-inconsolata">10. Contact</h2>
+            <p className="mb-4">
+              If you have any questions or concerns about this Privacy Policy, please contact us at:
+            </p>
+            <p>
+              📧 <a href="mailto:ninepics99@gmail.com" className="text-blue-400 hover:text-blue-300">ninepics99@gmail.com</a>
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-12 text-center">
+          <a href="/" className="text-blue-400 hover:text-blue-300 font-inconsolata flex items-center justify-center gap-2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
+            Back to Home
+          </a>
         </div>
       </div>
     </div>

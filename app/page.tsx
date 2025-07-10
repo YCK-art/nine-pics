@@ -566,7 +566,7 @@ export default function Home() {
             <span className="text-gray-500">|</span>
             <a href="/terms" className="hover:text-gray-300 transition-colors">Terms of Service</a>
             <span className="text-gray-500">|</span>
-            <a href="/contact" className="hover:text-gray-300 transition-colors">Contact</a>
+            <a href="mailto:ninepics99@gmail.com" className="hover:text-gray-300 transition-colors">Contact</a>
           </div>
         </div>
       </div>

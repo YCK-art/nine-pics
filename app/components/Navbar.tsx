@@ -57,7 +57,7 @@ export default function Navbar({ onUserChanged }: { onUserChanged?: () => void }
       <nav className="fixed top-0 left-0 w-full z-50 flex items-center justify-center min-w-0" style={{pointerEvents: 'none'}}>
         <div className="flex items-center justify-between px-4 sm:px-8 py-4 bg-black rounded-full shadow-md mb-8 max-w-3xl w-full border border-gray-700 border-opacity-40 min-w-0" style={{borderRadius: '9999px', pointerEvents: 'auto'}}>
           {/* 로고 */}
-          <div className="flex items-center font-bold text-3xl sm:text-5xl text-white font-arsenale whitespace-nowrap min-w-0 flex-shrink-0">ninepics</div>
+          <a href="/" className="flex items-center font-bold text-3xl sm:text-5xl text-white font-arsenale whitespace-nowrap min-w-0 flex-shrink-0 cursor-pointer">ninepics</a>
           {/* 메뉴 */}
           <div className="flex space-x-4 sm:space-x-8 text-sm sm:text-base font-medium text-gray-200 font-inconsolata min-w-0 overflow-hidden">
             <button
