@@ -594,7 +594,7 @@ export default function Home() {
             <div className="flex flex-col items-center justify-center min-h-[320px]">
               <div className="w-full max-w-xs mx-auto flex flex-col items-center">
                 <div className="relative w-full h-80 flex items-center justify-center select-none">
-                  {/* 겹치는 카드들 */}
+                  {/* 스택 카드 UI */}
                   <div className="w-64 h-80 flex items-center justify-center mx-8 relative">
                     {Array.from({ length: unlockedSlots }).map((_, i) => {
                       const photo = photos[i];
@@ -602,12 +602,15 @@ export default function Home() {
                       const isEmpty = !photo;
                       const bgColor = slotColors[i];
                       const glow = slotGlow[i];
-                      // 카드 위치/스케일/투명도 계산
+                      // 카드 위치/스케일/투명도/그림자/테두리 계산
                       const offset = i - cardIndex;
                       const z = 10 - Math.abs(offset);
-                      const scale = offset === 0 ? 1 : 0.92 - Math.abs(offset) * 0.04;
-                      const translateX = offset * 24;
-                      const opacity = Math.abs(offset) > 2 ? 0 : 1 - Math.abs(offset) * 0.25;
+                      const scale = offset === 0 ? 1 : offset === -1 || offset === 1 ? 0.92 : 0.86;
+                      const translateX = offset * 32; // 좌우로 더 겹치게
+                      const opacity = offset === 0 ? 1 : offset === -1 || offset === 1 ? 0.75 : 0.5;
+                      const boxShadow = offset === 0 ? '0 8px 32px 0 rgba(0,0,0,0.25)' : offset === -1 || offset === 1 ? '0 4px 16px 0 rgba(0,0,0,0.12)' : 'none';
+                      const border = offset === 0 ? '2px solid #fff' : 'none';
+                      if (Math.abs(offset) > 2) return null; // 3장까지만 보이게
                       return (
                         <div
                           key={i}
@@ -621,14 +624,15 @@ export default function Home() {
                           }}
                           style={{
                             backgroundColor: isUnlocked ? bgColor : '#fff',
-                            transition: 'all 0.3s',
+                            transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)',
                             zIndex: z,
                             transform: `translateX(${translateX}px) scale(${scale})`,
                             opacity,
+                            boxShadow,
+                            border,
                           }}
-                          className={`absolute top-0 left-0 aspect-[4/5] w-64 h-80 rounded-[999px] overflow-hidden flex items-center justify-center shadow-lg mx-auto cursor-pointer
+                          className={`absolute top-0 left-0 aspect-[4/5] w-64 h-80 rounded-[999px] overflow-hidden flex items-center justify-center mx-auto cursor-pointer
                             ${isEmpty ? (isUnlocked ? '' : 'opacity-50') : ''}
-                            ${offset === 0 ? 'ring-2 ring-black' : ''}
                           `}
                         >
                           {photo ? (
