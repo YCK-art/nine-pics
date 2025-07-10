@@ -3,7 +3,7 @@
 import React from 'react'
 import Image from 'next/image'
 import { initializeApp, getApps } from 'firebase/app'
-import { getAuth, signInWithRedirect, GoogleAuthProvider } from 'firebase/auth'
+import { getAuth, signInWithPopup, GoogleAuthProvider } from 'firebase/auth'
 import { getFirestore, doc, setDoc, getDoc, updateDoc } from 'firebase/firestore'
 
 // Firebase 설정 (하드코딩)
@@ -28,24 +28,29 @@ if (!getApps().length) {
 const db = getFirestore()
 
 export default function SignUpModal({ onClose, onSuccess, type = 'signup' }: { onClose: () => void, onSuccess?: () => void, type?: 'signup' | 'login' }) {
-  const isInAppBrowser = () => {
-    const ua = navigator.userAgent || navigator.vendor;
-    return /KAKAOTALK|KAKAOBROWSER|Instagram|FBAN|FBAV|Line|NAVER|Daum|Whale|SamsungBrowser/i.test(ua);
-  };
-
   const handleGoogleSignUp = async () => {
-    if (isInAppBrowser()) {
-      alert('구글 로그인이 차단된 인앱 브라우저입니다.\n오른쪽 상단 메뉴에서 "기타 브라우저로 열기"를 선택해 주세요.');
-      return;
-    }
     try {
       const provider = new GoogleAuthProvider()
       const auth = getAuth()
-      await auth.signOut(); // 혹시 모를 세션 충돌 방지
-      auth.languageCode = 'ko';
-      if (auth.useDeviceLanguage) auth.useDeviceLanguage();
-      await signInWithRedirect(auth, provider);
-      // Firestore에 유저 정보 및 slotLevel 저장은 리디렉션 후 처리
+      const result = await signInWithPopup(auth, provider)
+      // Firestore에 유저 정보 및 slotLevel 저장
+      const userRef = doc(db, 'users', result.user.uid)
+      const userSnap = await getDoc(userRef)
+      if (!userSnap.exists()) {
+        await setDoc(userRef, {
+          uid: result.user.uid,
+          email: result.user.email,
+          slotLevel: 1,
+        })
+      } else {
+        // 이미 유저가 있으면 slotLevel이 없을 때만 1로 세팅
+        const data = userSnap.data()
+        if (data.slotLevel === undefined) {
+          await updateDoc(userRef, { slotLevel: 1 })
+        }
+      }
+      onClose()
+      if (onSuccess) onSuccess()
     } catch (error: any) {
       alert('구글 회원가입 실패: ' + (error?.message || error))
     }

@@ -16,7 +16,6 @@ export default function Navbar({ onUserChanged, albumUid }: { onUserChanged?: ()
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [albumOwnerEmail, setAlbumOwnerEmail] = useState<string>('');
   const [isOwner, setIsOwner] = useState(true);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   useEffect(() => {
     const auth = getAuth()
@@ -78,30 +77,14 @@ export default function Navbar({ onUserChanged, albumUid }: { onUserChanged?: ()
     }
   };
 
-  const handleMobileMenuClick = (action: string) => {
-    setShowMobileMenu(false);
-    switch (action) {
-      case 'slots':
-        window.dispatchEvent(new CustomEvent('open-modal', { detail: 'slots' }));
-        break;
-      case 'views':
-        window.dispatchEvent(new CustomEvent('open-modal', { detail: 'views' }));
-        break;
-      case 'link':
-        handleLinkClick();
-        break;
-    }
-  };
-
   return (
     <>
       <nav className="fixed top-0 left-0 w-full z-50 flex items-center justify-center min-w-0" style={{pointerEvents: 'none'}}>
         <div className="flex items-center justify-between px-4 sm:px-8 py-4 bg-black rounded-full shadow-md mb-8 max-w-3xl w-full border border-gray-700 border-opacity-40 min-w-0" style={{borderRadius: '9999px', pointerEvents: 'auto'}}>
           {/* 로고 */}
           <a href="/" className="flex items-center font-bold text-3xl sm:text-5xl text-white font-arsenale whitespace-nowrap min-w-0 flex-shrink-0 cursor-pointer">ninepics</a>
-          
-          {/* 데스크탑 메뉴 (md 이상에서만 표시) */}
-          <div className="hidden md:flex flex-1 items-center justify-center">
+          {/* 가운데 메뉴 */}
+          <div className="flex-1 flex items-center justify-center">
             <div className="flex space-x-8 text-sm sm:text-base font-medium text-gray-200 font-inconsolata">
               <button
                 className="hover:text-primary transition-colors bg-transparent border-none outline-none p-0 m-0 cursor-pointer whitespace-nowrap min-w-0 flex-shrink"
@@ -132,8 +115,7 @@ export default function Navbar({ onUserChanged, albumUid }: { onUserChanged?: ()
               </a>
             </div>
           </div>
-
-          {/* 오른쪽 계정 버튼 및 햄버거 메뉴 */}
+          {/* 오른쪽 계정 버튼 (흰색 모듈) */}
           <div className="flex items-center ml-4 space-x-2">
             {isLoggedIn ? (
               <button
@@ -164,71 +146,9 @@ export default function Navbar({ onUserChanged, albumUid }: { onUserChanged?: ()
                 </button>
               </>
             )}
-
-            {/* 햄버거 메뉴 버튼 (md 이하에서만 표시) */}
-            <div className="md:hidden relative">
-              <button
-                className="p-2 text-white hover:text-primary transition-colors"
-                onClick={() => setShowMobileMenu(!showMobileMenu)}
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-
-              {/* 모바일 사이드 슬라이드 메뉴 */}
-              {showMobileMenu && (
-                <>
-                  {/* 오버레이 */}
-                  <div
-                    className="fixed inset-0 z-40 bg-black bg-opacity-40"
-                    onClick={() => setShowMobileMenu(false)}
-                  />
-                  {/* 사이드 메뉴 */}
-                  <div className="fixed top-0 right-0 h-full w-64 bg-black border-l border-gray-700 shadow-lg z-50 flex flex-col pt-20 animate-slidein">
-                    <button
-                      className="block w-full text-left px-6 py-4 text-lg text-gray-200 hover:text-primary hover:bg-gray-800 transition-colors border-b border-gray-800"
-                      onClick={() => handleMobileMenuClick('slots')}
-                    >
-                      Slots
-                    </button>
-                    <button
-                      className="block w-full text-left px-6 py-4 text-lg text-gray-200 hover:text-primary hover:bg-gray-800 transition-colors border-b border-gray-800"
-                      onClick={() => handleMobileMenuClick('views')}
-                    >
-                      Views
-                    </button>
-                    <button
-                      className="block w-full text-left px-6 py-4 text-lg text-gray-200 hover:text-primary hover:bg-gray-800 transition-colors"
-                      onClick={() => handleMobileMenuClick('link')}
-                    >
-                      Link
-                    </button>
-                  </div>
-                  <style jsx global>{`
-                    @keyframes slidein {
-                      from { transform: translateX(100%); }
-                      to { transform: translateX(0); }
-                    }
-                    .animate-slidein {
-                      animation: slidein 0.25s cubic-bezier(0.4,0,0.2,1);
-                    }
-                  `}</style>
-                </>
-              )}
-            </div>
           </div>
         </div>
       </nav>
-
-      {/* 모바일 메뉴 오버레이 (클릭 시 메뉴 닫기) */}
-      {showMobileMenu && (
-        <div 
-          className="fixed inset-0 z-40 md:hidden"
-          onClick={() => setShowMobileMenu(false)}
-        />
-      )}
-
       {showSignUp && <SignUpModal onClose={()=>setShowSignUp(false)} onSuccess={handleSignUpSuccess} type={modalType} />}
       {showAccount && (
         <MyAccountModal
