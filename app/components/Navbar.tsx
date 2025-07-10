@@ -176,30 +176,45 @@ export default function Navbar({ onUserChanged, albumUid }: { onUserChanged?: ()
                 </svg>
               </button>
 
-              {/* 모바일 드롭다운 메뉴 */}
+              {/* 모바일 사이드 슬라이드 메뉴 */}
               {showMobileMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-black border border-gray-700 rounded-lg shadow-lg z-50">
-                  <div className="py-2">
+                <>
+                  {/* 오버레이 */}
+                  <div
+                    className="fixed inset-0 z-40 bg-black bg-opacity-40"
+                    onClick={() => setShowMobileMenu(false)}
+                  />
+                  {/* 사이드 메뉴 */}
+                  <div className="fixed top-0 right-0 h-full w-64 bg-black border-l border-gray-700 shadow-lg z-50 flex flex-col pt-20 animate-slidein">
                     <button
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-200 hover:text-primary hover:bg-gray-800 transition-colors"
+                      className="block w-full text-left px-6 py-4 text-lg text-gray-200 hover:text-primary hover:bg-gray-800 transition-colors border-b border-gray-800"
                       onClick={() => handleMobileMenuClick('slots')}
                     >
                       Slots
                     </button>
                     <button
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-200 hover:text-primary hover:bg-gray-800 transition-colors"
+                      className="block w-full text-left px-6 py-4 text-lg text-gray-200 hover:text-primary hover:bg-gray-800 transition-colors border-b border-gray-800"
                       onClick={() => handleMobileMenuClick('views')}
                     >
                       Views
                     </button>
                     <button
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-200 hover:text-primary hover:bg-gray-800 transition-colors"
+                      className="block w-full text-left px-6 py-4 text-lg text-gray-200 hover:text-primary hover:bg-gray-800 transition-colors"
                       onClick={() => handleMobileMenuClick('link')}
                     >
                       Link
                     </button>
                   </div>
-                </div>
+                  <style jsx global>{`
+                    @keyframes slidein {
+                      from { transform: translateX(100%); }
+                      to { transform: translateX(0); }
+                    }
+                    .animate-slidein {
+                      animation: slidein 0.25s cubic-bezier(0.4,0,0.2,1);
+                    }
+                  `}</style>
+                </>
               )}
             </div>
           </div>

@@ -470,8 +470,8 @@ export default function Home() {
       <div className="flex-1 flex flex-col">
         <div className="container mx-auto px-4 py-8 flex-1 flex flex-col">
           {/* 사진 그리드 */}
-          <div className="bg-black rounded-2xl shadow-lg p-6 mb-8 flex-1">
-            <div className="grid grid-cols-3 gap-2 sm:gap-4">
+          <div className="bg-black rounded-2xl shadow-lg p-6 mb-4 flex-none">
+            <div className="grid grid-cols-3 gap-4">
               {Array.from({ length: 9 }, (_, index) => {
                 const photo = photos.slice(0, unlockedSlots)[index]
                 const isUnlocked = index < unlockedSlots
@@ -495,7 +495,7 @@ export default function Home() {
                       transition: 'box-shadow 0.3s, border 0.3s',
                     }}
                     className={`aspect-[4/5] rounded-[999px] overflow-hidden flex items-center justify-center transition-all duration-300 cursor-pointer
-                      w-24 h-32 sm:w-28 sm:h-36 md:w-32 md:h-40
+                      w-28 h-36 sm:w-32 sm:h-40 md:w-36 md:h-48
                       ${isEmpty
                         ? isUnlocked
                           ? ''
@@ -572,7 +572,7 @@ export default function Home() {
           </div>
 
           {/* Privacy Policy, Terms of Service, Contact 링크들 */}
-          <div className="text-center mt-auto pb-4 sm:pb-8">
+          <div className="text-center pb-4 sm:pb-8">
             <div className="flex items-center justify-center space-x-4 text-xs sm:text-sm md:text-base text-white font-inconsolata">
               <a href="/privacy" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
               <span className="text-gray-500">|</span>
