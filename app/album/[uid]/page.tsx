@@ -438,10 +438,10 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
           albumUid={params.uid}
         />
       )}
-      {/* 모바일: 하단 안내 */}
-      {isMobile && (
-        <div className="fixed bottom-0 left-0 w-full z-40 bg-black bg-opacity-95 pt-2 pb-4">
-          <div className="flex items-center justify-center space-x-4 text-xs text-white font-inconsolata">
+      {/* PC: 하단 안내에만 여백 추가 */}
+      {!isMobile && (
+        <div className="text-center mt-10">
+          <div className="flex items-center justify-center space-x-4 text-sm text-white font-inconsolata">
             <a href="/privacy" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
             <span className="text-gray-500">|</span>
             <a href="/terms" className="hover:text-gray-300 transition-colors">Terms of Service</a>
