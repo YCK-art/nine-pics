@@ -5,6 +5,7 @@ import { Eye, Upload } from 'lucide-react'
 import Image from 'next/image'
 import { getFirestore, doc, onSnapshot, getDoc, collection, getDocs, increment, updateDoc, setDoc } from 'firebase/firestore'
 import { initializeApp, getApps } from 'firebase/app'
+import { getAuth } from 'firebase/auth'
 import ViewsModal from '../../components/ViewsModal'
 import Navbar from '../../components/Navbar'
 import MyAccountModal from '../../components/MyAccountModal'
@@ -88,6 +89,7 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
   const [shakeIndex, setShakeIndex] = useState<number|null>(null);
   // PC: 사진 확대 모달 상태
   const [enlargedPhoto, setEnlargedPhoto] = useState<Photo | null>(null);
+  const [currentUserUid, setCurrentUserUid] = useState<string | null>(null);
 
   // 모바일 여부 감지
   React.useEffect(() => {
@@ -160,6 +162,16 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
     })
     return () => unsubscribe()
   }, [unlockedSlots, params.uid, albumMeta.totalViews])
+
+  // 현재 로그인한 유저의 uid 가져오기
+  useEffect(() => {
+    try {
+      const auth = getAuth();
+      setCurrentUserUid(auth.currentUser?.uid || null);
+    } catch (e) {
+      setCurrentUserUid(null);
+    }
+  }, []);
 
   // Firestore에서 앨범 데이터 구독
   useEffect(() => {
@@ -553,7 +565,7 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
                   <span className="font-bold">{usersAt1Slot.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between text-black text-lg font-inconsolata">
-                  <span>Your Rank</span>
+                  <span>{currentUserUid === params.uid ? 'Your Rank' : "This User's Rank"}</span>
                   <span className="font-bold">#{userPercentile}</span>
                 </div>
               </div>
