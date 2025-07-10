@@ -18,8 +18,27 @@ interface Photo {
 }
 
 const slotColors = [
-  '#EAF4F8', '#D4F1E1', '#FFE3D2', '#F7CED7', '#E0D4F7', '#7D9EEB', '#8151D5', '#2D3A70', '#121212',
+  '#EAF4F8', // 1
+  '#D4F1E1', // 2
+  '#FFE3D2', // 3
+  '#F7CED7', // 4
+  '#E0D4F7', // 5
+  '#7D9EEB', // 6
+  '#8151D5', // 7
+  '#2D3A70', // 8
+  '#121212', // 9
 ]
+const slotGlow = [
+  '0 0 0 6px #b6d6e6, 0 0 16px 6px #b6d6e6', // 1
+  '0 0 0 6px #aee9c8, 0 0 16px 6px #aee9c8', // 2
+  '0 0 0 6px #ffd1b3, 0 0 16px 6px #ffd1b3', // 3
+  '0 0 0 6px #f7b6c7, 0 0 16px 6px #f7b6c7', // 4
+  '0 0 0 6px #c7b6e6, 0 0 16px 6px #c7b6e6', // 5
+  '0 0 0 6px #7D9EEB, 0 0 16px 6px #7D9EEB', // 6
+  '0 0 0 6px #8151D5, 0 0 16px 6px #8151D5', // 7
+  '0 0 0 6px #2D3A70, 0 0 16px 6px #2D3A70', // 8
+  '0 0 0 6px #121212, 0 0 16px 6px #121212', // 9
+];
 
 const slotBorderColors = [
   '#7D9EEB', // 1
@@ -66,6 +85,7 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
     return 'grid';
   });
   const [cardIndex, setCardIndex] = React.useState(0);
+  const [shakeIndex, setShakeIndex] = useState<number|null>(null);
 
   // 모바일 여부 감지
   React.useEffect(() => {
@@ -351,19 +371,41 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
           <div className="bg-black rounded-2xl shadow-lg p-6 mb-8">
             <div className="grid grid-cols-3 gap-4">
               {Array.from({ length: 9 }, (_, index) => {
-                const photo = photos[index]
-                const isUnlocked = index < unlockedSlots
-                const hasPhoto = photo && photo.url
+                const photo = photos[index];
+                const isUnlocked = index < unlockedSlots;
+                const hasPhoto = photo && photo.url;
+                const bgColor = slotColors[index];
+                const glow = slotGlow ? slotGlow[index] : '';
                 return (
                   <div
                     key={index}
                     style={{
-                      backgroundColor: isUnlocked ? slotColors[index] : '#fff',
+                      backgroundColor: isUnlocked ? bgColor : '#fff',
                       transition: 'box-shadow 0.3s, border 0.3s',
                     }}
-                    className={`aspect-[4/5] rounded-[999px] overflow-hidden flex items-center justify-center transition-all duration-300
-                      ${!hasPhoto ? (isUnlocked ? '' : 'opacity-50') : ''}
+                    className={`aspect-[4/5] rounded-[999px] overflow-hidden flex items-center justify-center transition-all duration-300 cursor-pointer
+                      ${!hasPhoto ? (isUnlocked ? '' : 'opacity-50 cursor-default') : ''}
+                      ${shakeIndex === index ? 'shake' : ''}
                     `}
+                    onClick={() => {
+                      if (!isUnlocked) {
+                        setShakeIndex(index);
+                        setTimeout(() => setShakeIndex(null), 400);
+                        return;
+                      }
+                    }}
+                    onMouseEnter={e => {
+                      if (isUnlocked) {
+                        (e.currentTarget as HTMLDivElement).style.boxShadow = glow;
+                        (e.currentTarget as HTMLDivElement).style.border = `6px solid ${bgColor}`;
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      if (isUnlocked) {
+                        (e.currentTarget as HTMLDivElement).style.boxShadow = '';
+                        (e.currentTarget as HTMLDivElement).style.border = 'none';
+                      }
+                    }}
                   >
                     {hasPhoto ? (
                       <div className="relative w-full h-full group rounded-[999px] overflow-hidden">
@@ -382,7 +424,7 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
                       </div>
                     )}
                   </div>
-                )
+                );
               })}
             </div>
           </div>
