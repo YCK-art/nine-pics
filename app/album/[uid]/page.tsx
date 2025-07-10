@@ -359,7 +359,7 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto"></div>
-          <p className="mt-4 text-gray-300">로딩 중...</p>
+          <p className="mt-4 text-gray-300">Loading...</p>
         </div>
       </div>
     )
@@ -370,10 +370,10 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <div className="text-2xl font-bold text-white mb-2">앨범을 찾을 수 없습니다</div>
-          <div className="text-gray-400 mb-4">링크를 다시 확인해주세요</div>
+          <div className="text-2xl font-bold text-white mb-2">Album not found</div>
+          <div className="text-gray-400 mb-4">Please check the link again</div>
           <div className="text-gray-500 text-sm mb-4">UID: {params.uid}</div>
-          <a href="/" className="text-blue-400 hover:underline">홈으로 돌아가기</a>
+          <a href="/" className="text-blue-400 hover:underline">Back to Home</a>
         </div>
       </div>
     )
