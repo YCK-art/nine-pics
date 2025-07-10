@@ -6,14 +6,16 @@ import MyAccountModal from './MyAccountModal'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import LinkModal from './LinkModal';
 
-export default function Navbar({ onUserChanged }: { onUserChanged?: () => void } = {}) {
+export default function Navbar({ onUserChanged, albumUid }: { onUserChanged?: () => void, albumUid?: string } = {}) {
   const [showSignUp, setShowSignUp] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [showAccount, setShowAccount] = useState(false)
   const [userEmail, setUserEmail] = useState('')
+  const [userUid, setUserUid] = useState<string>('');
   const [modalType, setModalType] = useState<'signup' | 'login'>('signup')
   const [showLinkModal, setShowLinkModal] = useState(false);
-  const [userUid, setUserUid] = useState<string>('');
+  const [albumOwnerEmail, setAlbumOwnerEmail] = useState<string>('');
+  const [isOwner, setIsOwner] = useState(true);
 
   // Firebase Auth 상태 감지
   useEffect(() => {
@@ -30,9 +32,27 @@ export default function Navbar({ onUserChanged }: { onUserChanged?: () => void }
         setUserUid('')
       }
     })
-
     return () => unsubscribe()
   }, [onUserChanged])
+
+  // 앨범 주인 확인 및 닉네임 설정
+  useEffect(() => {
+    if (albumUid && userUid) {
+      const isCurrentUserOwner = albumUid === userUid;
+      setIsOwner(isCurrentUserOwner);
+      
+      if (!isCurrentUserOwner) {
+        // 다른 유저의 앨범일 때, 앨범 주인의 이메일을 가져와서 닉네임으로 사용
+        // 실제로는 Firestore에서 해당 유저의 이메일을 가져와야 하지만,
+        // 현재는 URL의 UID를 기반으로 임시 닉네임 생성
+        const tempNickname = albumUid.substring(0, 8); // UID의 앞 8자리를 닉네임으로 사용
+        setAlbumOwnerEmail(tempNickname);
+      }
+    } else {
+      setIsOwner(true);
+      setAlbumOwnerEmail('');
+    }
+  }, [albumUid, userUid]);
 
   // 로그인/회원가입 성공 시 콜백
   const handleSignUpSuccess = () => {
@@ -41,7 +61,6 @@ export default function Navbar({ onUserChanged }: { onUserChanged?: () => void }
   }
 
   const handleLogout = () => {
-    setIsLoggedIn(false)
     setUserEmail('')
   }
 
@@ -53,6 +72,15 @@ export default function Navbar({ onUserChanged }: { onUserChanged?: () => void }
       return;
     }
     setShowLinkModal(true);
+  };
+
+  // 계정 버튼 텍스트 결정
+  const getAccountButtonText = () => {
+    if (isOwner) {
+      return 'My Account';
+    } else {
+      return albumOwnerEmail || 'User';
+    }
   };
 
   return (
@@ -80,28 +108,33 @@ export default function Navbar({ onUserChanged }: { onUserChanged?: () => void }
             >
               Views
             </a>
-            <a href="#" className="hover:text-primary transition-colors whitespace-nowrap min-w-0 flex-shrink" onClick={handleLinkClick}>Link</a>
-          </div>
-          {/* 로그인/회원가입 or My Account */}
-          <div className="flex items-center space-x-2 sm:space-x-4 font-inconsolata min-w-0">
-            {isLoggedIn ? (
-              <button className="px-7 py-2 rounded-full bg-white text-black font-semibold text-xs sm:text-base whitespace-nowrap min-w-0 shadow" onClick={()=>setShowAccount(true)}>My Account</button>
-            ) : (
-              <>
-                <button className="px-4 sm:px-6 py-2 rounded-xl bg-gray-800 text-white font-semibold hover:bg-gray-700 transition-colors text-xs sm:text-base whitespace-nowrap min-w-0" onClick={()=>{setModalType('login'); setShowSignUp(true);}}>Log in</button>
-                <button className="px-5 sm:px-7 py-2 rounded-full bg-white text-black font-semibold hover:bg-gray-200 transition-colors text-xs sm:text-base whitespace-nowrap min-w-0" onClick={()=>{setModalType('signup'); setShowSignUp(true);}}>Sign up</button>
-              </>
-            )}
+            <a
+              href="#"
+              className="hover:text-primary transition-colors whitespace-nowrap min-w-0 flex-shrink"
+              onClick={e => {
+                e.preventDefault();
+                handleLinkClick();
+              }}
+            >
+              Link
+            </a>
+            <button
+              className="hover:text-primary transition-colors bg-transparent border-none outline-none p-0 m-0 cursor-pointer whitespace-nowrap min-w-0 flex-shrink"
+              style={{background:'none'}}
+              onClick={() => setShowAccount(true)}
+            >
+              {getAccountButtonText()}
+            </button>
           </div>
         </div>
       </nav>
       {showSignUp && <SignUpModal onClose={()=>setShowSignUp(false)} onSuccess={handleSignUpSuccess} type={modalType} />}
       {showAccount && (
         <MyAccountModal
-          email={userEmail}
+          email={isOwner ? userEmail : albumOwnerEmail}
           onClose={() => setShowAccount(false)}
           onLogout={handleLogout}
-          albumUid={userUid}
+          albumUid={albumUid}
         />
       )}
       {showLinkModal && <LinkModal onClose={() => setShowLinkModal(false)} />}

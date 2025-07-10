@@ -214,7 +214,7 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
 
   return (
     <div className="min-h-screen bg-black">
-      <Navbar />
+      <Navbar albumUid={params.uid} />
       <div className="container mx-auto px-4 py-8">
         {/* 사진 그리드 */}
         <div className="bg-black rounded-2xl shadow-lg p-6 mb-8">

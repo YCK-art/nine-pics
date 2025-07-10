@@ -7,7 +7,8 @@ import { getFirestore, collection, getDocs, query, where, doc, getDoc, onSnapsho
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
 import { initializeApp, getApps } from 'firebase/app'
-import ViewsModal from './components/ViewsModal';
+import ViewsModal from './components/ViewsModal'
+import Navbar from './components/Navbar'
 
 interface Photo {
   id: string
@@ -85,12 +86,14 @@ export default function Home() {
   const [showViewsModal, setShowViewsModal] = useState(false);
   const [shakeIndex, setShakeIndex] = useState<number|null>(null);
   const [albumMeta, setAlbumMeta] = useState<{ totalViews: number, createdAt: string | null }>({ totalViews: 0, createdAt: null });
+  const [userUid, setUserUid] = useState<string>('');
 
   // Firebase Auth 상태 감지
   React.useEffect(() => {
     const auth = getAuth()
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setIsLoggedIn(!!user)
+      setUserUid(user?.uid || '')
     })
     return () => unsubscribe()
   }, [])
@@ -463,6 +466,7 @@ export default function Home() {
           onClose={() => setShowViewsModal(false)}
         />
       )}
+      <Navbar albumUid={userUid} />
       <div className="container mx-auto px-4 py-8">
         {/* 사진 그리드 */}
         <div className="bg-black rounded-2xl shadow-lg p-6 mb-8">

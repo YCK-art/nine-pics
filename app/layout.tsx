@@ -1,8 +1,6 @@
 import React from 'react'
 import './globals.css'
 import type { Metadata } from 'next'
-import Navbar from './components/Navbar'
-import Home from './page'
 
 export const metadata: Metadata = {
   title: 'Nine Pics',
@@ -17,7 +15,6 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className="bg-black min-h-screen">
-        <Navbar />
         <main className="max-w-6xl mx-auto px-4 bg-black pt-32">{children}</main>
         <footer className="w-full bg-black py-16 relative"></footer>
       </body>
