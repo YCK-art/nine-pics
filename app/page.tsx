@@ -516,6 +516,15 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-black flex flex-col">
+      {/* 업로드 중 오버레이 */}
+      {isUploading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto"></div>
+            <p className="mt-4 text-gray-300">Loading...</p>
+          </div>
+        </div>
+      )}
       {/* Toast 메시지 */}
       {showLoginToast && (
         <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
