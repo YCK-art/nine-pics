@@ -432,9 +432,19 @@ export default function Home() {
 
   // 카드 뷰 스와이프 핸들러
   const swipeHandlers = useSwipeable({
-    onSwipedLeft: () => setCardIndex(i => Math.min(unlockedSlots - 1, i + 1)),
-    onSwipedRight: () => setCardIndex(i => Math.max(0, i - 1)),
+    onSwipedLeft: () => {
+      console.log('Swiped Left');
+      setCardIndex(i => Math.min(unlockedSlots - 1, i + 1));
+    },
+    onSwipedRight: () => {
+      console.log('Swiped Right');
+      setCardIndex(i => Math.max(0, i - 1));
+    },
     trackMouse: true,
+    delta: 10,
+    swipeDuration: 500,
+    preventScrollOnSwipe: true,
+    trackTouch: true,
   });
 
   return (
@@ -507,10 +517,10 @@ export default function Home() {
           {isMobile && mobileView === 'cards' ? (
             <div className="flex flex-col items-center justify-center min-h-[320px]">
               <div className="w-full max-w-xs mx-auto flex flex-col items-center">
-                <div className="relative w-full h-80 flex items-center justify-center select-none" {...swipeHandlers}>
+                <div className="relative w-full h-80 flex items-center justify-center select-none">
                   {/* 겹치는 카드들 */}
                   <div className="w-64 h-80 flex items-center justify-center mx-8 relative">
-                    {Array.from({ length: 9 }).map((_, i) => {
+                    {Array.from({ length: unlockedSlots }).map((_, i) => {
                       const photo = photos[i];
                       const isUnlocked = i < unlockedSlots;
                       const isEmpty = !photo;
@@ -525,6 +535,7 @@ export default function Home() {
                       return (
                         <div
                           key={i}
+                          {...(offset === 0 ? swipeHandlers : {})}
                           style={{
                             backgroundColor: isUnlocked ? bgColor : '#fff',
                             transition: 'all 0.3s',
@@ -538,7 +549,7 @@ export default function Home() {
                           `}
                         >
                           {photo ? (
-                            <div className="relative w-full h-full group rounded-[999px] overflow-hidden">
+                            <div className="relative w-full h-full group rounded-[999px] overflow-hidden pointer-events-none">
                               <Image
                                 src={photo.url}
                                 alt={photo.alt}
@@ -547,7 +558,7 @@ export default function Home() {
                               />
                               <button
                                 onClick={(e) => { e.stopPropagation(); removePhoto(photo.id) }}
-                                className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto"
                               >
                                 ×
                               </button>
@@ -577,7 +588,7 @@ export default function Home() {
                 </div>
                 {/* 인디케이터 */}
                 <div className="flex justify-center mt-4 gap-2">
-                  {Array.from({ length: 9 }).map((_, i) => (
+                  {Array.from({ length: unlockedSlots }).map((_, i) => (
                     <div
                       key={i}
                       className={`w-2 h-2 rounded-full ${i === cardIndex ? 'bg-black' : 'bg-gray-300'}`}

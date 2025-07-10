@@ -8,6 +8,8 @@ import { initializeApp, getApps } from 'firebase/app'
 import ViewsModal from '../../components/ViewsModal'
 import Navbar from '../../components/Navbar'
 import MyAccountModal from '../../components/MyAccountModal'
+import SegmentedControl from '../../components/SegmentedControl';
+import { useSwipeable } from 'react-swipeable';
 
 interface Photo {
   id: string
@@ -46,6 +48,28 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
   const [totalUsers, setTotalUsers] = useState<number>(0)
   const [usersAt1Slot, setUsersAt1Slot] = useState<number>(0)
   const [userPercentile, setUserPercentile] = useState<number>(0)
+  const [isMobile, setIsMobile] = React.useState(false);
+  const [mobileView, setMobileView] = React.useState<'cards' | 'grid'>(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) return 'cards';
+    return 'grid';
+  });
+  const [cardIndex, setCardIndex] = React.useState(0);
+
+  // 모바일 여부 감지
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const checkMobile = () => {
+        setIsMobile(window.innerWidth < 768);
+      };
+      checkMobile();
+      window.addEventListener('resize', checkMobile);
+      return () => window.removeEventListener('resize', checkMobile);
+    }
+  }, []);
+  React.useEffect(() => {
+    if (isMobile && mobileView !== 'cards') setMobileView('cards');
+    if (!isMobile && mobileView !== 'grid') setMobileView('grid');
+  }, [isMobile]);
 
   // 슬롯 해제 로직
   const getUnlockedSlots = () => {
@@ -187,6 +211,31 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
   // daysSinceCreated 계산
   const daysSinceCreated = albumMeta.createdAt ? Math.max(1, Math.ceil((Date.now() - new Date(albumMeta.createdAt).getTime()) / (1000 * 60 * 60 * 24))) : 1
 
+  // 카드 뷰 스와이프 핸들러
+  const swipeHandlers = useSwipeable({
+    onSwipedLeft: () => {
+      console.log('Swiped Left');
+      setCardIndex(i => Math.min(unlockedSlots - 1, i + 1));
+    },
+    onSwipedRight: () => {
+      console.log('Swiped Right');
+      setCardIndex(i => Math.max(0, i - 1));
+    },
+    trackMouse: true,
+    delta: 10,
+    swipeDuration: 500,
+    preventScrollOnSwipe: true,
+    trackTouch: true,
+  });
+
+  // 영어 텍스트로 변환
+  const getSlotLabel = (index: number) => {
+    if (index === 1) return '100 Views'
+    if (index === 2) return '1,000 Views'
+    if (index > 2) return 'Locked'
+    return '50 Views'
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -215,46 +264,117 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
   return (
     <div className="min-h-screen bg-black">
       <Navbar albumUid={params.uid} />
+      {/* 모바일: 세그먼트 컨트롤 - 툴바 바로 아래 */}
+      <div className="block md:hidden w-full pt-2 pb-1">
+        <SegmentedControl value={mobileView} onChange={setMobileView} />
+      </div>
       <div className="container mx-auto px-4 py-8">
-        {/* 사진 그리드 */}
-        <div className="bg-black rounded-2xl shadow-lg p-6 mb-8">
-          <div className="grid grid-cols-3 gap-4">
-            {Array.from({ length: 9 }, (_, index) => {
-              const photo = photos[index]
-              const isUnlocked = index < unlockedSlots
-              const hasPhoto = photo && photo.url
-              return (
-                <div
-                  key={index}
-                  style={{
-                    backgroundColor: isUnlocked ? slotColors[index] : '#fff',
-                    transition: 'box-shadow 0.3s, border 0.3s',
-                  }}
-                  className={`aspect-[4/5] rounded-[999px] overflow-hidden flex items-center justify-center transition-all duration-300
-                    ${!hasPhoto ? (isUnlocked ? '' : 'opacity-50') : ''}
-                  `}
-                >
-                  {hasPhoto ? (
-                    <div className="relative w-full h-full group rounded-[999px] overflow-hidden">
-                      <Image
-                        src={photo.url}
-                        alt={photo.alt || `Photo ${index + 1}`}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <div className="text-center pointer-events-none">
-                      <div className="text-gray-400 text-4xl font-bold font-inconsolata">
-                        {index + 1}
+        {/* Cards 뷰 (모바일, cards 탭) */}
+        {isMobile && mobileView === 'cards' ? (
+          <div className="flex flex-col items-center justify-center min-h-[320px]">
+            <div className="w-full max-w-xs mx-auto flex flex-col items-center">
+              <div className="relative w-full h-80 flex items-center justify-center select-none">
+                {/* 겹치는 카드들 */}
+                <div className="w-64 h-80 flex items-center justify-center mx-8 relative">
+                  {Array.from({ length: unlockedSlots }).map((_, i) => {
+                    const photo = photos[i];
+                    const isUnlocked = i < unlockedSlots;
+                    const isEmpty = !photo;
+                    const bgColor = slotColors[i];
+                    // 카드 위치/스케일/투명도 계산
+                    const offset = i - cardIndex;
+                    const z = 10 - Math.abs(offset);
+                    const scale = offset === 0 ? 1 : 0.92 - Math.abs(offset) * 0.04;
+                    const translateX = offset * 24;
+                    const opacity = Math.abs(offset) > 2 ? 0 : 1 - Math.abs(offset) * 0.25;
+                    return (
+                      <div
+                        key={i}
+                        {...(offset === 0 ? swipeHandlers : {})}
+                        style={{
+                          backgroundColor: isUnlocked ? bgColor : '#fff',
+                          transition: 'all 0.3s',
+                          zIndex: z,
+                          transform: `translateX(${translateX}px) scale(${scale})`,
+                          opacity,
+                        }}
+                        className={`absolute top-0 left-0 aspect-[4/5] w-64 h-80 rounded-[999px] overflow-hidden flex items-center justify-center shadow-lg mx-auto
+                          ${isEmpty ? (isUnlocked ? '' : 'opacity-50') : ''}
+                          ${offset === 0 ? 'ring-2 ring-black' : ''}
+                        `}
+                      >
+                        {photo ? (
+                          <div className="relative w-full h-full group rounded-[999px] overflow-hidden pointer-events-none">
+                            <Image
+                              src={photo.url}
+                              alt={photo.alt || `Photo ${i + 1}`}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="text-center pointer-events-none">
+                            <Eye className="w-8 h-8 text-gray-700 mx-auto mb-2" />
+                            <p className="text-sm text-gray-700 font-inconsolata">{getSlotLabel(i)}</p>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
-              )
-            })}
+              </div>
+              {/* 인디케이터 */}
+              <div className="flex justify-center mt-4 gap-2">
+                {Array.from({ length: unlockedSlots }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-2 h-2 rounded-full ${i === cardIndex ? 'bg-black' : 'bg-gray-300'}`}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
+        ) : (
+          // 기존 그리드 뷰 (PC+모바일 grid 탭)
+          <div className="bg-black rounded-2xl shadow-lg p-6 mb-8">
+            <div className="grid grid-cols-3 gap-4">
+              {Array.from({ length: 9 }, (_, index) => {
+                const photo = photos[index]
+                const isUnlocked = index < unlockedSlots
+                const hasPhoto = photo && photo.url
+                return (
+                  <div
+                    key={index}
+                    style={{
+                      backgroundColor: isUnlocked ? slotColors[index] : '#fff',
+                      transition: 'box-shadow 0.3s, border 0.3s',
+                    }}
+                    className={`aspect-[4/5] rounded-[999px] overflow-hidden flex items-center justify-center transition-all duration-300
+                      ${!hasPhoto ? (isUnlocked ? '' : 'opacity-50') : ''}
+                    `}
+                  >
+                    {hasPhoto ? (
+                      <div className="relative w-full h-full group rounded-[999px] overflow-hidden">
+                        <Image
+                          src={photo.url}
+                          alt={photo.alt || `Photo ${index + 1}`}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="text-center pointer-events-none">
+                        <div className="text-gray-400 text-4xl font-bold font-inconsolata">
+                          {index + 1}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
         {/* 하단 안내 */}
         <div className="text-center">
           <div className="flex items-center justify-center space-x-4 text-sm text-white font-inconsolata">
