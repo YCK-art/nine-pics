@@ -86,6 +86,8 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
   });
   const [cardIndex, setCardIndex] = React.useState(0);
   const [shakeIndex, setShakeIndex] = useState<number|null>(null);
+  // PC: 사진 확대 모달 상태
+  const [enlargedPhoto, setEnlargedPhoto] = useState<Photo | null>(null);
 
   // 모바일 여부 감지
   React.useEffect(() => {
@@ -109,8 +111,8 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
     if (viewCount >= 15000000) return 8
     if (viewCount >= 5000000) return 7
     if (viewCount >= 1000000) return 6
-    if (viewCount >= 200000) return 5
-    if (viewCount >= 20000) return 4
+    if (viewCount >= 20000) return 5
+    if (viewCount >= 20000) return 5
     if (viewCount >= 1000) return 3
     if (viewCount >= 100) return 2
     return 1
@@ -414,6 +416,11 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
                         setTimeout(() => setShakeIndex(null), 400);
                         return;
                       }
+                      // PC에서만 사진 클릭 시 확대
+                      if (!isMobile && hasPhoto) {
+                        setEnlargedPhoto(photo);
+                        return;
+                      }
                     }}
                     onMouseEnter={e => {
                       if (isUnlocked) {
@@ -522,6 +529,14 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
             <a href="/terms" className="hover:text-gray-300 transition-colors">Terms of Service</a>
             <span className="text-gray-500">|</span>
             <a href="mailto:ninepics99@gmail.com" className="hover:text-gray-300 transition-colors">Contact</a>
+          </div>
+        </div>
+      )}
+      {/* PC: 사진 확대 모달 */}
+      {!isMobile && enlargedPhoto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 animate-fadein" onClick={() => setEnlargedPhoto(null)}>
+          <div className="relative max-w-2xl w-full flex items-center justify-center" onClick={e => e.stopPropagation()}>
+            <img src={enlargedPhoto.url} alt={enlargedPhoto.alt || ''} className="max-h-[80vh] max-w-full rounded-3xl shadow-2xl border-4 border-white" />
           </div>
         </div>
       )}

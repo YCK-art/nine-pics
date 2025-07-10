@@ -133,15 +133,16 @@ export default function Home() {
 
   // 조회수에 따른 슬롯 해제 로직
   const getUnlockedSlots = () => {
-    if (viewCount >= 30000000) return 9
-    if (viewCount >= 15000000) return 8
-    if (viewCount >= 5000000) return 7
-    if (viewCount >= 1000000) return 6
-    if (viewCount >= 200000) return 5
-    if (viewCount >= 20000) return 4
-    if (viewCount >= 1000) return 3
-    if (viewCount >= 100) return 2
-    return 1
+    const v = typeof viewCount === 'number' ? viewCount : 0;
+    if (v >= 30000000) return 9;
+    if (v >= 15000000) return 8;
+    if (v >= 5000000) return 7;
+    if (v >= 1000000) return 6;
+    if (v >= 200000) return 5;
+    if (v >= 20000) return 4;
+    if (v >= 1000) return 3;
+    if (v >= 100) return 2;
+    return 1;
   }
 
   const unlockedSlots = getUnlockedSlots()
@@ -304,6 +305,7 @@ export default function Home() {
             id: userAlbumId,
             photos: updatedPhotos,
             viewCount: 0,
+            totalViews: 0,
             createdAt: new Date().toISOString(),
             userId: currentUser.uid,
             userEmail: currentUser.email,
@@ -658,9 +660,11 @@ export default function Home() {
                           fill
                           className="object-cover"
                         />
+                        {/* PC: 삭제 버튼 (마우스 오버 시만 보임, 모바일은 숨김) */}
                         <button
-                          onClick={(e) => { e.stopPropagation(); removePhoto(photo.id) }}
-                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={e => { e.stopPropagation(); removePhoto(photo.id); }}
+                          className="hidden md:flex absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                          style={{ pointerEvents: 'auto' }}
                         >
                           ×
                         </button>
@@ -710,7 +714,7 @@ export default function Home() {
         </div>
 
         {/* Privacy Policy, Terms of Service, Contact 링크들 */}
-        <div className="text-center mt-2 pb-2">
+        <div className="text-center mt-2 pb-2 md:mt-16 md:pb-8">
           <div className="flex items-center justify-center space-x-4 text-xs md:text-sm text-white font-inconsolata">
             <a href="/privacy" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
             <span className="text-gray-500">|</span>
