@@ -10,6 +10,7 @@ import { initializeApp, getApps } from 'firebase/app'
 import ViewsModal from './components/ViewsModal'
 import Navbar from './components/Navbar'
 import SegmentedControl from './components/SegmentedControl';
+import { useSwipeable } from 'react-swipeable';
 
 interface Photo {
   id: string
@@ -426,6 +427,13 @@ export default function Home() {
     return () => window.removeEventListener('show-login-toast', handler);
   }, []);
 
+  // 카드 뷰 스와이프 핸들러
+  const swipeHandlers = useSwipeable({
+    onSwipedLeft: () => setCardIndex(i => Math.min(unlockedSlots - 1, i + 1)),
+    onSwipedRight: () => setCardIndex(i => Math.max(0, i - 1)),
+    trackMouse: true,
+  });
+
   return (
     <div className="min-h-screen bg-black flex flex-col">
       {/* Toast 메시지 */}
@@ -496,33 +504,34 @@ export default function Home() {
           {isMobile && mobileView === 'cards' ? (
             <div className="flex flex-col items-center justify-center min-h-[320px]">
               <div className="w-full max-w-xs mx-auto flex flex-col items-center">
-                <div className="relative w-full h-80 flex items-center justify-center">
-                  {/* 좌우 이동 버튼 */}
-                  <button
-                    className="absolute left-0 top-1/2 -translate-y-1/2 bg-black/40 rounded-full p-2 text-white z-10"
-                    onClick={() => setCardIndex(i => Math.max(0, i - 1))}
-                    disabled={cardIndex === 0}
-                  >
-                    &#8592;
-                  </button>
-                  <div className="w-64 h-80 flex items-center justify-center mx-8">
-                    {/* 슬롯 카드 */}
-                    {(() => {
-                      const index = cardIndex;
-                      const photo = photos.slice(0, unlockedSlots)[index];
-                      const isUnlocked = index < unlockedSlots;
+                <div className="relative w-full h-80 flex items-center justify-center select-none" {...swipeHandlers}>
+                  {/* 겹치는 카드들 */}
+                  <div className="w-64 h-80 flex items-center justify-center mx-8 relative">
+                    {Array.from({ length: unlockedSlots }).map((_, i) => {
+                      const photo = photos.slice(0, unlockedSlots)[i];
+                      const isUnlocked = i < unlockedSlots;
                       const isEmpty = !photo;
-                      const bgColor = slotColors[index];
-                      const glow = slotGlow[index];
+                      const bgColor = slotColors[i];
+                      const glow = slotGlow[i];
+                      // 카드 위치/스케일/투명도 계산
+                      const offset = i - cardIndex;
+                      const z = 10 - Math.abs(offset);
+                      const scale = offset === 0 ? 1 : 0.92 - Math.abs(offset) * 0.04;
+                      const translateX = offset * 24;
+                      const opacity = Math.abs(offset) > 2 ? 0 : 1 - Math.abs(offset) * 0.25;
                       return (
                         <div
-                          key={index}
+                          key={i}
                           style={{
                             backgroundColor: isUnlocked ? bgColor : '#fff',
-                            transition: 'box-shadow 0.3s, border 0.3s',
+                            transition: 'all 0.3s',
+                            zIndex: z,
+                            transform: `translateX(${translateX}px) scale(${scale})`,
+                            opacity,
                           }}
-                          className={`aspect-[4/5] w-64 h-80 rounded-[999px] overflow-hidden flex items-center justify-center transition-all duration-300 shadow-lg mx-auto
+                          className={`absolute top-0 left-0 aspect-[4/5] w-64 h-80 rounded-[999px] overflow-hidden flex items-center justify-center shadow-lg mx-auto
                             ${isEmpty ? (isUnlocked ? '' : 'opacity-50') : ''}
+                            ${offset === 0 ? 'ring-2 ring-black' : ''}
                           `}
                         >
                           {photo ? (
@@ -555,20 +564,13 @@ export default function Home() {
                           ) : (
                             <div className="text-center pointer-events-none">
                               <Eye className="w-8 h-8 text-gray-700 mx-auto mb-2" />
-                              <p className="text-sm text-gray-700 font-inconsolata">{getSlotLabel(index)}</p>
+                              <p className="text-sm text-gray-700 font-inconsolata">{getSlotLabel(i)}</p>
                             </div>
                           )}
                         </div>
                       );
-                    })()}
+                    })}
                   </div>
-                  <button
-                    className="absolute right-0 top-1/2 -translate-y-1/2 bg-black/40 rounded-full p-2 text-white z-10"
-                    onClick={() => setCardIndex(i => Math.min(unlockedSlots - 1, i + 1))}
-                    disabled={cardIndex === unlockedSlots - 1}
-                  >
-                    &#8594;
-                  </button>
                 </div>
                 {/* 인디케이터 */}
                 <div className="flex justify-center mt-4 gap-2">
