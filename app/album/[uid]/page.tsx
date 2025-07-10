@@ -134,10 +134,8 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
       const currentUnlockedSlots = unlockedSlots
       const usersAtCurrentSlot = users.filter(u => {
         const userSlotLevel = Number(u.slotLevel || 1)
-        console.log('Debug - User slotLevel:', u.uid, userSlotLevel, '>=', currentUnlockedSlots, '?', userSlotLevel >= currentUnlockedSlots)
-        return userSlotLevel >= currentUnlockedSlots
+        return userSlotLevel === currentUnlockedSlots
       }).length
-      console.log('Debug - Users at current slot:', usersAtCurrentSlot)
       setUsersAt1Slot(usersAtCurrentSlot)
       
       // 조회수 기반 순위 계산 (현재 앨범 주인 기준)
