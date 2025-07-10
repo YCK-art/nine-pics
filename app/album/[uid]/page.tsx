@@ -180,7 +180,7 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
                 const photosArray = realtimeData.photos || []
                 console.log('Photos array:', photosArray)
                 
-                setPhotos(photosArray.slice(0, getUnlockedSlots()))
+                setPhotos(photosArray)
                 setAlbumMeta({
                   totalViews: typeof realtimeData.totalViews === 'number' ? realtimeData.totalViews : 0,
                   createdAt: realtimeData.createdAt || null,
