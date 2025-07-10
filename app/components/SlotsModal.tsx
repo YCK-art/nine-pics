@@ -36,8 +36,8 @@ export default function SlotsModal({
               <span className="font-bold">{usersAt1Slot.toLocaleString()}</span>
             </div>
             <div className="flex items-center justify-between text-black text-lg font-inconsolata">
-              <span>Your Percentile</span>
-              <span className="font-bold">Top {userPercentile}%</span>
+              <span>Your Rank</span>
+              <span className="font-bold">#{userPercentile}</span>
             </div>
           </div>
         </div>

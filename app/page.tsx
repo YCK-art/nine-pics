@@ -147,7 +147,7 @@ export default function Home() {
 
   const unlockedSlots = getUnlockedSlots()
 
-  // 현재 로그인한 유저의 slotLevel을 가져오는 함수
+    // 현재 로그인한 유저의 조회수 기반 순위를 가져오는 함수
   React.useEffect(() => {
     // 실시간 구독
     const unsubscribe = onSnapshot(collection(db, 'users'), (usersSnapshot) => {
@@ -168,28 +168,34 @@ export default function Home() {
       console.log('Debug - Users at current slot:', usersAtCurrentSlot)
       setUsersAt1Slot(usersAtCurrentSlot)
       
-                // 내 percentile 계산 (현재 unlocked 슬롯 기준)
-          const auth = getAuth()
-          const currentUser = auth.currentUser
-          if (currentUser) {
-            const myData = users.find(u => u.uid === currentUser.uid)
-            console.log('Debug - My data:', myData)
-            if (myData && myData.slotLevel != null) {
-              const mySlot = Number(myData.slotLevel)
-              // 현재 unlocked 슬롯보다 높은 슬롯을 가진 유저 수 계산
-              const higher = users.filter(u => Number(u.slotLevel || 1) > currentUnlockedSlots).length
-              // 나와 같은 슬롯 이상을 가진 유저 수 계산
-              const sameOrHigher = users.filter(u => Number(u.slotLevel || 1) >= currentUnlockedSlots).length
-              // percentile = (나보다 높은 슬롯을 가진 사람 수 / 전체) * 100
-              let percentile = Math.round((higher / users.length) * 100)
-              if (users.length === 1) percentile = 0
-              if (percentile < 1) percentile = 1
-              console.log('Debug - Percentile calculation:', { higher, sameOrHigher, total: users.length, percentile })
-              setUserPercentile(percentile)
-            } else if (users.length === 1) {
-              setUserPercentile(0)
-            }
-          }
+      // 조회수 기반 순위 계산
+      const auth = getAuth()
+      const currentUser = auth.currentUser
+      if (currentUser) {
+        const myData = users.find(u => u.uid === currentUser.uid)
+        console.log('Debug - My data:', myData)
+        
+        if (myData) {
+          // 조회수 기준으로 정렬 (높은 순서대로)
+          const sortedUsers = users.sort((a, b) => {
+            const aViews = Number(a.totalViews || a.viewCount || 0)
+            const bViews = Number(b.totalViews || b.viewCount || 0)
+            return bViews - aViews
+          })
+          
+          // 현재 사용자의 순위 찾기
+          const currentUserRank = sortedUsers.findIndex(u => u.uid === currentUser.uid) + 1
+          console.log('Debug - Rank calculation:', { 
+            totalUsers: users.length, 
+            myViews: myData.totalViews || myData.viewCount || 0,
+            rank: currentUserRank 
+          })
+          
+          setUserPercentile(currentUserRank)
+        } else if (users.length === 1) {
+          setUserPercentile(1)
+        }
+      }
     })
     return () => unsubscribe()
   }, [unlockedSlots])
@@ -535,8 +541,8 @@ export default function Home() {
                   <span className="font-bold">{usersAt1Slot.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between text-black text-lg font-inconsolata">
-                  <span>Your Percentile</span>
-                  <span className="font-bold">Top {userPercentile}%</span>
+                  <span>Your Rank</span>
+                  <span className="font-bold">#{userPercentile}</span>
                 </div>
               </div>
             </div>

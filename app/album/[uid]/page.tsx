@@ -140,18 +140,28 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
       console.log('Debug - Users at current slot:', usersAtCurrentSlot)
       setUsersAt1Slot(usersAtCurrentSlot)
       
-      // 현재 앨범 주인의 percentile 계산 (현재 unlocked 슬롯 기준)
+      // 조회수 기반 순위 계산 (현재 앨범 주인 기준)
       const currentAlbumOwnerSlotLevel = unlockedSlots
-      const higher = users.filter(u => Number(u.slotLevel || 1) > currentAlbumOwnerSlotLevel).length
-      const sameOrHigher = users.filter(u => Number(u.slotLevel || 1) >= currentAlbumOwnerSlotLevel).length
-      let percentile = Math.round((higher / users.length) * 100)
-      if (users.length === 1) percentile = 0
-      if (percentile < 1) percentile = 1
-      console.log('Debug - Percentile calculation:', { higher, sameOrHigher, total: users.length, percentile })
-      setUserPercentile(percentile)
+      
+      // 조회수 기준으로 정렬 (높은 순서대로)
+      const sortedUsers = users.sort((a, b) => {
+        const aViews = Number(a.totalViews || a.viewCount || 0)
+        const bViews = Number(b.totalViews || b.viewCount || 0)
+        return bViews - aViews
+      })
+      
+      // 현재 앨범 주인의 순위 찾기 (params.uid로 찾기)
+      const currentAlbumOwnerRank = sortedUsers.findIndex(u => u.uid === params.uid) + 1
+      console.log('Debug - Rank calculation:', { 
+        totalUsers: users.length, 
+        albumOwnerViews: albumMeta.totalViews,
+        rank: currentAlbumOwnerRank 
+      })
+      
+      setUserPercentile(currentAlbumOwnerRank)
     })
     return () => unsubscribe()
-  }, [unlockedSlots])
+  }, [unlockedSlots, params.uid, albumMeta.totalViews])
 
   // Firestore에서 앨범 데이터 구독
   useEffect(() => {
