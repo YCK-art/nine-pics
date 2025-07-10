@@ -78,6 +78,11 @@ export default function Navbar({ onUserChanged, albumUid }: { onUserChanged?: ()
     }
   };
 
+  // 디버깅용 상태 변화 로그
+  useEffect(() => {
+    console.log('Navbar albumUid:', albumUid, 'userUid:', userUid, 'isOwner:', isOwner);
+  }, [albumUid, userUid, isOwner]);
+
   return (
     <>
       <nav className="fixed top-0 left-0 w-full z-50 flex items-center justify-center min-w-0">
@@ -120,14 +125,14 @@ export default function Navbar({ onUserChanged, albumUid }: { onUserChanged?: ()
 
           {/* PC: 기존 계정 버튼, 모바일: 숨김 */}
           <div className="hidden md:flex items-center ml-4 space-x-2">
-            {isLoggedIn ? (
+            {isLoggedIn && (albumUid && userUid) ? (
               <button
                 className="px-7 py-2 rounded-full bg-white text-black font-semibold text-xs sm:text-base whitespace-nowrap min-w-0 shadow font-inconsolata"
                 onClick={()=>setShowAccount(true)}
               >
                 {getAccountButtonText()}
               </button>
-            ) : (
+            ) : !isLoggedIn ? (
               <>
                 <button
                   className="px-5 py-2 rounded-full bg-[#f1f2ee] text-black font-bold text-sm whitespace-nowrap min-w-0 shadow font-inconsolata"
@@ -148,7 +153,7 @@ export default function Navbar({ onUserChanged, albumUid }: { onUserChanged?: ()
                   Sign Up
                 </button>
               </>
-            )}
+            ) : null}
           </div>
 
           {/* 모바일: 로고+로그인/회원가입+햄버거 */}
