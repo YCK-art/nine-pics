@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { Eye } from 'lucide-react'
 import Image from 'next/image'
-import { getFirestore, doc, onSnapshot, getDoc, collection, getDocs } from 'firebase/firestore'
+import { getFirestore, doc, onSnapshot, getDoc, collection, getDocs, increment, updateDoc } from 'firebase/firestore'
 import { initializeApp, getApps } from 'firebase/app'
 import ViewsModal from '../../components/ViewsModal'
 import Navbar from '../../components/Navbar'
@@ -180,6 +180,18 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
                 })
                 setViewCount(realtimeData.totalViews || realtimeData.viewCount || 0)
                 setError(null)
+                
+                // 조회수 증가 (한 번만 실행되도록)
+                if (!window.sessionStorage.getItem(`viewed-${albumId}`)) {
+                  updateDoc(albumRef, {
+                    totalViews: increment(1)
+                  }).then(() => {
+                    console.log('View count incremented')
+                    window.sessionStorage.setItem(`viewed-${albumId}`, 'true')
+                  }).catch(err => {
+                    console.error('Failed to increment view count:', err)
+                  })
+                }
               } else {
                 console.log('Album no longer exists')
                 setPhotos([])
