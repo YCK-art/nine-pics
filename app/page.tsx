@@ -9,6 +9,7 @@ import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/
 import { initializeApp, getApps } from 'firebase/app'
 import ViewsModal from './components/ViewsModal'
 import Navbar from './components/Navbar'
+import SegmentedControl from './components/SegmentedControl';
 
 interface Photo {
   id: string
@@ -87,6 +88,24 @@ export default function Home() {
   const [shakeIndex, setShakeIndex] = useState<number|null>(null);
   const [albumMeta, setAlbumMeta] = useState<{ totalViews: number, createdAt: string | null }>({ totalViews: 0, createdAt: null });
   const [userUid, setUserUid] = useState<string>('');
+  const [mobileView, setMobileView] = React.useState<'cards' | 'grid'>(typeof window !== 'undefined' && window.innerWidth < 768 ? 'cards' : 'grid');
+  const [cardIndex, setCardIndex] = React.useState(0);
+  // 모바일 여부 감지
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const checkMobile = () => {
+        setIsMobile(window.innerWidth < 768);
+      };
+      checkMobile();
+      window.addEventListener('resize', checkMobile);
+      return () => window.removeEventListener('resize', checkMobile);
+    }
+  }, []);
+  // 모바일 진입 시 디폴트 cards로
+  React.useEffect(() => {
+    if (isMobile) setMobileView('cards');
+  }, [isMobile]);
 
   // Firebase Auth 상태 감지
   React.useEffect(() => {
@@ -358,10 +377,10 @@ export default function Home() {
 
   // 영어 텍스트로 변환
   const getSlotLabel = (index: number) => {
-    if (index === 1) return 'Unlock at 100 Views'
-    if (index === 2) return 'Unlock at 1000 views'
+    if (index === 1) return '100 Views'
+    if (index === 2) return '1,000 Views'
     if (index > 2) return 'Locked'
-    return 'Unlock at 50 views'
+    return '50 Views'
   }
 
   // Slots/Views/Link 메뉴 클릭 핸들러
@@ -467,10 +486,103 @@ export default function Home() {
         />
       )}
       <Navbar albumUid={userUid} />
+      {/* 모바일: 세그먼트 컨트롤 - 툴바 바로 아래 */}
+      <div className="block md:hidden w-full pt-2 pb-1">
+        <SegmentedControl value={mobileView} onChange={setMobileView} />
+      </div>
       <div className="flex-1 flex flex-col">
-        <div className="container mx-auto px-4 py-8 flex-1 flex flex-col">
-          {/* 사진 그리드 */}
-          <div className="bg-black rounded-2xl shadow-lg p-6 mb-8 flex-1">
+        <div className="container mx-auto px-4 py-4 flex-1 flex flex-col pb-16 sm:pb-0">
+          {/* Cards 뷰 (모바일, cards 탭) */}
+          {isMobile && mobileView === 'cards' ? (
+            <div className="flex flex-col items-center justify-center min-h-[320px]">
+              <div className="w-full max-w-xs mx-auto flex flex-col items-center">
+                <div className="relative w-full h-80 flex items-center justify-center">
+                  {/* 좌우 이동 버튼 */}
+                  <button
+                    className="absolute left-0 top-1/2 -translate-y-1/2 bg-black/40 rounded-full p-2 text-white z-10"
+                    onClick={() => setCardIndex(i => Math.max(0, i - 1))}
+                    disabled={cardIndex === 0}
+                  >
+                    &#8592;
+                  </button>
+                  <div className="w-64 h-80 flex items-center justify-center mx-8">
+                    {/* 슬롯 카드 */}
+                    {(() => {
+                      const index = cardIndex;
+                      const photo = photos.slice(0, unlockedSlots)[index];
+                      const isUnlocked = index < unlockedSlots;
+                      const isEmpty = !photo;
+                      const bgColor = slotColors[index];
+                      const glow = slotGlow[index];
+                      return (
+                        <div
+                          key={index}
+                          style={{
+                            backgroundColor: isUnlocked ? bgColor : '#fff',
+                            transition: 'box-shadow 0.3s, border 0.3s',
+                          }}
+                          className={`aspect-[4/5] w-64 h-80 rounded-[999px] overflow-hidden flex items-center justify-center transition-all duration-300 shadow-lg mx-auto
+                            ${isEmpty ? (isUnlocked ? '' : 'opacity-50') : ''}
+                          `}
+                        >
+                          {photo ? (
+                            <div className="relative w-full h-full group rounded-[999px] overflow-hidden">
+                              <Image
+                                src={photo.url}
+                                alt={photo.alt}
+                                fill
+                                className="object-cover"
+                              />
+                              <button
+                                onClick={(e) => { e.stopPropagation(); removePhoto(photo.id) }}
+                                className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ) : isUnlocked ? (
+                            isUploading ? (
+                              <div className="text-center pointer-events-none">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+                                <p className="text-sm text-white font-inconsolata">Loading...</p>
+                              </div>
+                            ) : (
+                              <div className="text-center pointer-events-none">
+                                <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                                <p className="text-sm text-gray-500 font-inconsolata">Add Photo</p>
+                              </div>
+                            )
+                          ) : (
+                            <div className="text-center pointer-events-none">
+                              <Eye className="w-8 h-8 text-gray-700 mx-auto mb-2" />
+                              <p className="text-sm text-gray-700 font-inconsolata">{getSlotLabel(index)}</p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                  <button
+                    className="absolute right-0 top-1/2 -translate-y-1/2 bg-black/40 rounded-full p-2 text-white z-10"
+                    onClick={() => setCardIndex(i => Math.min(unlockedSlots - 1, i + 1))}
+                    disabled={cardIndex === unlockedSlots - 1}
+                  >
+                    &#8594;
+                  </button>
+                </div>
+                {/* 인디케이터 */}
+                <div className="flex justify-center mt-4 gap-2">
+                  {Array.from({ length: unlockedSlots }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={`w-2 h-2 rounded-full ${i === cardIndex ? 'bg-black' : 'bg-gray-300'}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            // 기존 그리드 뷰 (PC+모바일 grid 탭)
             <div className="grid grid-cols-3 gap-4">
               {Array.from({ length: 9 }, (_, index) => {
                 const photo = photos.slice(0, unlockedSlots)[index]
@@ -524,8 +636,8 @@ export default function Home() {
                     ) : isUnlocked ? (
                       isUploading ? (
                         <div className="text-center pointer-events-none">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-                          <p className="text-sm text-white font-inconsolata">
+                          <div className="animate-spin rounded-full h-6 w-6 md:h-8 md:w-8 border-b-2 border-white mx-auto mb-2"></div>
+                          <p className="text-xs md:text-sm text-white font-inconsolata">
                             Loading
                             <span className="loading-dot">.</span>
                             <span className="loading-dot">.</span>
@@ -536,14 +648,14 @@ export default function Home() {
                         </div>
                       ) : (
                         <div className="text-center pointer-events-none">
-                          <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                          <p className="text-sm text-gray-500 font-inconsolata">Add Photo</p>
+                          <Upload className="w-6 h-6 md:w-8 md:h-8 text-gray-400 mx-auto mb-2" />
+                          <p className="text-xs md:text-sm text-gray-500 font-inconsolata">Add Photo</p>
                         </div>
                       )
                     ) : (
                       <div className="text-center pointer-events-none">
-                        <Eye className="w-8 h-8 text-gray-700 mx-auto mb-2" />
-                        <p className="text-sm text-gray-700 font-inconsolata">
+                        <Eye className="w-6 h-6 md:w-8 md:h-8 text-gray-700 mx-auto mb-2" />
+                        <p className="text-xs md:text-sm text-gray-700 font-inconsolata">
                           {getSlotLabel(index)}
                         </p>
                       </div>
@@ -552,27 +664,27 @@ export default function Home() {
                 )
               })}
             </div>
-            {/* 숨겨진 파일 업로드 input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileUpload}
-              className="hidden"
-              disabled={isUploading}
-              style={{ display: 'none' }}
-            />
-          </div>
+          )}
+          {/* 숨겨진 파일 업로드 input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileUpload}
+            className="hidden"
+            disabled={isUploading}
+            style={{ display: 'none' }}
+          />
+        </div>
 
-          {/* Privacy Policy, Terms of Service, Contact 링크들 */}
-          <div className="text-center mt-auto pb-4 sm:pb-8">
-            <div className="flex items-center justify-center space-x-4 text-sm text-white font-inconsolata">
-              <a href="/privacy" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
-              <span className="text-gray-500">|</span>
-              <a href="/terms" className="hover:text-gray-300 transition-colors">Terms of Service</a>
-              <span className="text-gray-500">|</span>
-              <a href="mailto:ninepics99@gmail.com" className="hover:text-gray-300 transition-colors">Contact</a>
-            </div>
+        {/* Privacy Policy, Terms of Service, Contact 링크들 */}
+        <div className="text-center mt-2 pb-2">
+          <div className="flex items-center justify-center space-x-4 text-xs md:text-sm text-white font-inconsolata">
+            <a href="/privacy" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
+            <span className="text-gray-500">|</span>
+            <a href="/terms" className="hover:text-gray-300 transition-colors">Terms of Service</a>
+            <span className="text-gray-500">|</span>
+            <a href="mailto:ninepics99@gmail.com" className="hover:text-gray-300 transition-colors">Contact</a>
           </div>
         </div>
       </div>
