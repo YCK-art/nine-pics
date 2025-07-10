@@ -11,8 +11,10 @@ export default function LinkModal({ onClose }: { onClose: () => void }) {
     if (uid) {
       userLink = `https://www.ninepics.com/album/${uid}`;
       displayLink = `ninepics.com/album/${uid}`;
-      if (displayLink.length > 18) {
-        displayLink = displayLink.substring(0, 18) + '...';
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+      const maxLen = isMobile ? 12 : 18;
+      if (displayLink.length > maxLen) {
+        displayLink = displayLink.substring(0, maxLen) + '...';
       }
     }
   }
@@ -32,7 +34,7 @@ export default function LinkModal({ onClose }: { onClose: () => void }) {
           ×
         </button>
         <h2 className="text-4xl font-bold text-black mb-6">Add to bio</h2>
-        <div className="flex items-center w-full justify-between border border-gray-200 rounded-xl px-4 py-4 bg-white mt-8 mb-4">
+        <div className={`flex items-center w-full justify-between border border-gray-200 rounded-xl px-4 py-4 bg-white mt-8 mb-4 ${typeof window !== 'undefined' && window.innerWidth < 768 ? 'gap-2' : ''}`}>
           {/* 검은색 링크 아이콘 */}
           <span className="mr-3 flex items-center">
             <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -40,11 +42,12 @@ export default function LinkModal({ onClose }: { onClose: () => void }) {
               <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="#000000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </span>
-          <span className="text-lg font-inconsolata text-black">{displayLink || '로그인 필요'}</span>
+          <span className={`text-lg font-inconsolata text-black ${typeof window !== 'undefined' && window.innerWidth < 768 ? 'truncate max-w-[110px] inline-block align-middle' : ''}`}>{displayLink || '로그인 필요'}</span>
           <button
-            className="ml-4 px-3 py-1 rounded-lg bg-gray-900 hover:bg-gray-800 text-white font-semibold text-base focus:outline-none"
+            className={`ml-2 px-3 py-1 rounded-lg bg-gray-900 hover:bg-gray-800 text-white font-semibold text-base focus:outline-none ${typeof window !== 'undefined' && window.innerWidth < 768 ? 'whitespace-nowrap' : ''}`}
             onClick={handleCopy}
             disabled={!userLink}
+            style={typeof window !== 'undefined' && window.innerWidth < 768 ? {fontSize:'15px', height:'32px', minWidth:'56px'} : {}}
           >
             {copied ? 'Copied!' : 'Copy'}
           </button>

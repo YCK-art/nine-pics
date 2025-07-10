@@ -376,8 +376,8 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
           </div>
         )}
         {/* 하단 안내 */}
-        <div className="text-center">
-          <div className="flex items-center justify-center space-x-4 text-sm text-white font-inconsolata">
+        <div className={`text-center ${isMobile ? 'pt-6' : ''}`}>
+          <div className={`flex items-center justify-center space-x-4 ${isMobile ? 'text-xs' : 'text-sm'} text-white font-inconsolata`}>
             <a href="/privacy" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
             <span className="text-gray-500">|</span>
             <a href="/terms" className="hover:text-gray-300 transition-colors">Terms of Service</a>
