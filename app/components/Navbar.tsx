@@ -154,24 +154,35 @@ export default function Navbar({ onUserChanged, albumUid }: { onUserChanged?: ()
 
           {/* 모바일: 로고+로그인/회원가입+햄버거 */}
           <div className="flex md:hidden items-center space-x-2 ml-auto">
-            <button
-              className="px-4 py-2 rounded-full bg-[#f1f2ee] text-black font-bold text-sm shadow font-inconsolata"
-              onClick={() => {
-                setModalType('login');
-                setShowSignUp(true);
-              }}
-            >
-              Log in
-            </button>
-            <button
-              className="px-4 py-2 rounded-full bg-[#232733] text-white font-bold text-sm shadow font-inconsolata"
-              onClick={() => {
-                setModalType('signup');
-                setShowSignUp(true);
-              }}
-            >
-              Sign Up
-            </button>
+            {isLoggedIn ? (
+              <button
+                className="px-7 py-2 rounded-full bg-white text-black font-semibold text-sm whitespace-nowrap min-w-0 shadow font-inconsolata"
+                onClick={()=>setShowAccount(true)}
+              >
+                {getAccountButtonText()}
+              </button>
+            ) : (
+              <>
+                <button
+                  className="px-4 py-2 rounded-full bg-[#f1f2ee] text-black font-bold text-sm shadow font-inconsolata"
+                  onClick={() => {
+                    setModalType('login');
+                    setShowSignUp(true);
+                  }}
+                >
+                  Log in
+                </button>
+                <button
+                  className="px-4 py-2 rounded-full bg-[#232733] text-white font-bold text-sm shadow font-inconsolata"
+                  onClick={() => {
+                    setModalType('signup');
+                    setShowSignUp(true);
+                  }}
+                >
+                  Sign Up
+                </button>
+              </>
+            )}
             {/* 햄버거 버튼 */}
             <button
               className="ml-2 p-2 rounded-full bg-white text-black shadow border border-gray-300"

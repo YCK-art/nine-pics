@@ -89,10 +89,11 @@ export default function Home() {
   const [shakeIndex, setShakeIndex] = useState<number|null>(null);
   const [albumMeta, setAlbumMeta] = useState<{ totalViews: number, createdAt: string | null }>({ totalViews: 0, createdAt: null });
   const [userUid, setUserUid] = useState<string>('');
-  const [mobileView, setMobileView] = React.useState<'cards' | 'grid'>(typeof window !== 'undefined' && window.innerWidth < 768 ? 'cards' : 'grid');
-  const [cardIndex, setCardIndex] = React.useState(0);
-  // 모바일 여부 감지
   const [isMobile, setIsMobile] = React.useState(false);
+  const [mobileView, setMobileView] = React.useState<'cards' | 'grid'>(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) return 'cards';
+    return 'grid';
+  });
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
       const checkMobile = () => {
@@ -103,10 +104,12 @@ export default function Home() {
       return () => window.removeEventListener('resize', checkMobile);
     }
   }, []);
-  // 모바일 진입 시 디폴트 cards로
   React.useEffect(() => {
-    if (isMobile) setMobileView('cards');
+    if (isMobile && mobileView !== 'cards') setMobileView('cards');
+    if (!isMobile && mobileView !== 'grid') setMobileView('grid');
   }, [isMobile]);
+  // 모바일 진입 시 디폴트 cards로
+  const [cardIndex, setCardIndex] = React.useState(0);
 
   // Firebase Auth 상태 감지
   React.useEffect(() => {
@@ -507,8 +510,8 @@ export default function Home() {
                 <div className="relative w-full h-80 flex items-center justify-center select-none" {...swipeHandlers}>
                   {/* 겹치는 카드들 */}
                   <div className="w-64 h-80 flex items-center justify-center mx-8 relative">
-                    {Array.from({ length: unlockedSlots }).map((_, i) => {
-                      const photo = photos.slice(0, unlockedSlots)[i];
+                    {Array.from({ length: 9 }).map((_, i) => {
+                      const photo = photos[i];
                       const isUnlocked = i < unlockedSlots;
                       const isEmpty = !photo;
                       const bgColor = slotColors[i];
@@ -574,7 +577,7 @@ export default function Home() {
                 </div>
                 {/* 인디케이터 */}
                 <div className="flex justify-center mt-4 gap-2">
-                  {Array.from({ length: unlockedSlots }).map((_, i) => (
+                  {Array.from({ length: 9 }).map((_, i) => (
                     <div
                       key={i}
                       className={`w-2 h-2 rounded-full ${i === cardIndex ? 'bg-black' : 'bg-gray-300'}`}
