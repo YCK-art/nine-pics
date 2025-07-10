@@ -134,13 +134,13 @@ export default function Home() {
   // 조회수에 따른 슬롯 해제 로직
   const getUnlockedSlots = () => {
     const v = typeof viewCount === 'number' ? viewCount : 0;
-    if (v >= 30000000) return 9;
-    if (v >= 15000000) return 8;
-    if (v >= 5000000) return 7;
-    if (v >= 1000000) return 6;
-    if (v >= 200000) return 5;
-    if (v >= 20000) return 4;
-    if (v >= 1000) return 3;
+    if (v >= 32000) return 9;
+    if (v >= 16000) return 8;
+    if (v >= 8000) return 7;
+    if (v >= 4000) return 6;
+    if (v >= 2000) return 5;
+    if (v >= 1000) return 4;
+    if (v >= 500) return 3;
     if (v >= 100) return 2;
     return 1;
   }
@@ -198,10 +198,12 @@ export default function Home() {
       if (snap.exists()) {
         const data = snap.data();
         setPhotos((data.photos || []).slice(0, getUnlockedSlots()));
+        const totalViews = data.totalViews || data.viewCount || 0;
         setAlbumMeta({
-          totalViews: data.totalViews || data.viewCount || 0,
+          totalViews: totalViews,
           createdAt: data.createdAt || null,
         });
+        setViewCount(totalViews);
       } else {
         setPhotos([]);
         setAlbumMeta({ totalViews: 0, createdAt: null });
@@ -293,7 +295,21 @@ export default function Home() {
             );
           });
           
-          updatedPhotos = [...existingPhotos, uploadedPhoto].slice(0, getUnlockedSlots());
+          // 빈 슬롯을 찾아서 추가
+          let targetIndex = existingPhotos.length;
+          for (let i = 0; i < getUnlockedSlots(); i++) {
+            if (!existingPhotos[i]) {
+              targetIndex = i;
+              break;
+            }
+          }
+          
+          if (targetIndex < getUnlockedSlots()) {
+            existingPhotos[targetIndex] = uploadedPhoto as any;
+            updatedPhotos = existingPhotos.slice(0, getUnlockedSlots());
+          } else {
+            updatedPhotos = existingPhotos;
+          }
         } else {
           updatedPhotos = existingPhotos;
         }
@@ -387,14 +403,15 @@ export default function Home() {
 
   // 영어 텍스트로 변환
   const getSlotLabel = (index: number) => {
+    if (index === 0) return '0 Views'
     if (index === 1) return '100 Views'
-    if (index === 2) return '1K Views'
-    if (index === 3) return '20K Views'
-    if (index === 4) return '200K Views'
-    if (index === 5) return '1M Views'
-    if (index === 6) return '5M Views'
-    if (index === 7) return '15M Views'
-    if (index === 8) return '30M Views'
+    if (index === 2) return '500 Views'
+    if (index === 3) return '1K Views'
+    if (index === 4) return '2K Views'
+    if (index === 5) return '4K Views'
+    if (index === 6) return '8K Views'
+    if (index === 7) return '16K Views'
+    if (index === 8) return '32K Views'
     return 'Locked'
   }
 
@@ -664,7 +681,7 @@ export default function Home() {
                         {/* PC: 삭제 버튼 (마우스 오버 시만 보임, 모바일은 숨김) */}
                         <button
                           onClick={e => { e.stopPropagation(); removePhoto(photo.id); }}
-                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 hover:opacity-100 focus:opacity-100 transition-opacity pointer-events-auto z-10"
+                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 hover:opacity-100 focus:opacity-100 transition-opacity pointer-events-auto z-10 hidden md:flex"
                           style={{ pointerEvents: 'auto' }}
                         >
                           ×

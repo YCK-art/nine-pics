@@ -32,6 +32,9 @@ export default function ViewsModal({
     return views.toString();
   };
 
+  // 디버깅용 콘솔 로그
+  console.log('ViewsModal props:', { totalViews, daysSinceCreated });
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
       <div className="rounded-[48px] bg-white shadow-2xl p-12 w-[420px] max-w-full relative flex flex-col items-center text-black font-inconsolata" onClick={(e) => e.stopPropagation()} style={{boxShadow:'0 8px 32px 0 rgba(31, 38, 135, 0.15)'}}>
@@ -42,6 +45,8 @@ export default function ViewsModal({
           <div className="flex flex-col items-center">
             <div className="text-2xl font-bold mb-2">Total Views</div>
             <div className="text-5xl font-extrabold">{formatViews(totalViews)}</div>
+            {/* 디버깅용 정보 */}
+            <div className="text-xs text-gray-500 mt-2">Raw: {totalViews}</div>
           </div>
           <div className="flex flex-col items-center">
             <div className="text-xl font-semibold mb-1">Joined</div>

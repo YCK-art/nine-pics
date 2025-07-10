@@ -108,13 +108,13 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
   // 슬롯 해제 로직
   const getUnlockedSlots = () => {
     const v = typeof viewCount === 'number' && !isNaN(viewCount) ? viewCount : 0;
-    if (v >= 30000000) return 9;
-    if (v >= 15000000) return 8;
-    if (v >= 5000000) return 7;
-    if (v >= 1000000) return 6;
-    if (v >= 200000) return 5;
-    if (v >= 20000) return 4;
-    if (v >= 1000) return 3;
+    if (v >= 32000) return 9;
+    if (v >= 16000) return 8;
+    if (v >= 8000) return 7;
+    if (v >= 4000) return 6;
+    if (v >= 2000) return 5;
+    if (v >= 1000) return 4;
+    if (v >= 500) return 3;
     if (v >= 100) return 2;
     return 1;
   }
@@ -281,14 +281,15 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
 
   // 영어 텍스트로 변환
   const getSlotLabel = (index: number) => {
+    if (index === 0) return '0 Views'
     if (index === 1) return '100 Views'
-    if (index === 2) return '1K Views'
-    if (index === 3) return '20K Views'
-    if (index === 4) return '200K Views'
-    if (index === 5) return '1M Views'
-    if (index === 6) return '5M Views'
-    if (index === 7) return '15M Views'
-    if (index === 8) return '30M Views'
+    if (index === 2) return '500 Views'
+    if (index === 3) return '1K Views'
+    if (index === 4) return '2K Views'
+    if (index === 5) return '4K Views'
+    if (index === 6) return '8K Views'
+    if (index === 7) return '16K Views'
+    if (index === 8) return '32K Views'
     return 'Locked'
   }
 
