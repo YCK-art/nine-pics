@@ -268,7 +268,7 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
       <div className="block md:hidden w-full pt-2 pb-1">
         <SegmentedControl value={mobileView} onChange={setMobileView} />
       </div>
-      <div className="container mx-auto px-4 py-8">
+      <div className={`container mx-auto px-4 py-8 ${isMobile ? 'pb-16' : ''}`}>
         {/* Cards 뷰 (모바일, cards 탭) */}
         {isMobile && mobileView === 'cards' ? (
           <div className="flex flex-col items-center justify-center min-h-[320px]">
@@ -375,16 +375,7 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
             </div>
           </div>
         )}
-        {/* 하단 안내 */}
-        <div className={`text-center ${isMobile ? 'pt-6' : ''}`}>
-          <div className={`flex items-center justify-center space-x-4 ${isMobile ? 'text-xs' : 'text-sm'} text-white font-inconsolata`}>
-            <a href="/privacy" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
-            <span className="text-gray-500">|</span>
-            <a href="/terms" className="hover:text-gray-300 transition-colors">Terms of Service</a>
-            <span className="text-gray-500">|</span>
-            <a href="mailto:ninepics99@gmail.com" className="hover:text-gray-300 transition-colors">Contact</a>
-          </div>
-        </div>
+        {/* 하단 안내는 모바일에선 container 바깥에서 렌더링 */}
       </div>
       
       {/* Slots Modal */}
@@ -446,6 +437,18 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
           onLogout={() => {}}
           albumUid={params.uid}
         />
+      )}
+      {/* 모바일: 하단 안내 */}
+      {isMobile && (
+        <div className="fixed bottom-0 left-0 w-full z-40 bg-black bg-opacity-95 pt-2 pb-4">
+          <div className="flex items-center justify-center space-x-4 text-xs text-white font-inconsolata">
+            <a href="/privacy" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
+            <span className="text-gray-500">|</span>
+            <a href="/terms" className="hover:text-gray-300 transition-colors">Terms of Service</a>
+            <span className="text-gray-500">|</span>
+            <a href="mailto:ninepics99@gmail.com" className="hover:text-gray-300 transition-colors">Contact</a>
+          </div>
+        </div>
       )}
     </div>
   )
