@@ -16,7 +16,7 @@ export default function Navbar({ onUserChanged, albumUid }: { onUserChanged?: ()
   const [modalType, setModalType] = useState<'signup' | 'login'>('signup')
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [albumOwnerEmail, setAlbumOwnerEmail] = useState<string>('');
-  const [isOwner, setIsOwner] = useState(true);
+  const [isOwner, setIsOwner] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   useEffect(() => {
@@ -38,14 +38,13 @@ export default function Navbar({ onUserChanged, albumUid }: { onUserChanged?: ()
 
   useEffect(() => {
     if (albumUid && userUid) {
-      const isCurrentUserOwner = albumUid === userUid;
-      setIsOwner(isCurrentUserOwner);
-      if (!isCurrentUserOwner) {
+      setIsOwner(String(albumUid) === String(userUid));
+      if (String(albumUid) !== String(userUid)) {
         const tempNickname = albumUid.substring(0, 8);
         setAlbumOwnerEmail(tempNickname);
       }
     } else {
-      setIsOwner(true);
+      setIsOwner(false);
       setAlbumOwnerEmail('');
     }
   }, [albumUid, userUid]);
