@@ -27,7 +27,7 @@ export default function MyAccountModal({ email, onClose, onLogout, albumUid }: {
       // 사용자명으로 링크 생성 시도
       const getUserLink = async () => {
         try {
-          const { getFirestore, doc, getDoc } = await import('firebase/firestore');
+          const { getFirestore, doc, getDoc, updateDoc } = await import('firebase/firestore');
           const db = getFirestore();
           const userRef = doc(db, 'users', uid);
           const userSnap = await getDoc(userRef);
@@ -38,9 +38,21 @@ export default function MyAccountModal({ email, onClose, onLogout, albumUid }: {
             console.log('MyAccountModal - User data:', userData);
             console.log('MyAccountModal - Username:', userData.username);
             
-            if (userData.username) {
+            // 사용자명이 없으면 이메일에서 자동 생성
+            if (!userData.username && userData.email) {
+              const autoUsername = userData.email.split('@')[0];
+              console.log('MyAccountModal - Auto-generating username:', autoUsername);
+              
+              // 자동으로 사용자명 설정
+              await updateDoc(userRef, { username: autoUsername });
+              
+              const usernameUrl = `https://www.ninepics.com/album/${autoUsername}`;
+              console.log('MyAccountModal - Using auto-generated username URL:', usernameUrl);
+              setUserLink(usernameUrl);
+              setDisplayLink(`ninepics.com/album/${autoUsername}`);
+            } else if (userData.username) {
               const usernameUrl = `https://www.ninepics.com/album/${userData.username}`;
-              console.log('MyAccountModal - Using username URL:', usernameUrl);
+              console.log('MyAccountModal - Using existing username URL:', usernameUrl);
               setUserLink(usernameUrl);
               setDisplayLink(`ninepics.com/album/${userData.username}`);
             } else {

@@ -403,9 +403,22 @@ export default function Home() {
           console.log('User data:', userData)
           console.log('Username:', userData.username)
           
-          if (userData.username) {
+          // 사용자명이 없으면 이메일에서 자동 생성
+          if (!userData.username && userData.email) {
+            const autoUsername = userData.email.split('@')[0];
+            console.log('Auto-generating username:', autoUsername);
+            
+            // 자동으로 사용자명 설정
+            await updateDoc(userRef, { username: autoUsername });
+            
+            const shareUrl = `https://www.ninepics.com/album/${autoUsername}`;
+            console.log('Using auto-generated username URL:', shareUrl)
+            navigator.clipboard.writeText(shareUrl)
+            alert('앨범 링크가 클립보드에 복사되었습니다!')
+            return
+          } else if (userData.username) {
             const shareUrl = `https://www.ninepics.com/album/${userData.username}`;
-            console.log('Using username URL:', shareUrl)
+            console.log('Using existing username URL:', shareUrl)
             navigator.clipboard.writeText(shareUrl)
             alert('앨범 링크가 클립보드에 복사되었습니다!')
             return
