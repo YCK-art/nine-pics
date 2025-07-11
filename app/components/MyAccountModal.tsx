@@ -27,22 +27,35 @@ export default function MyAccountModal({ email, onClose, onLogout, albumUid }: {
           const db = getFirestore();
           const userRef = doc(db, 'users', uid);
           const userSnap = await getDoc(userRef);
+          console.log('MyAccountModal - User exists:', userSnap.exists());
+          
           if (userSnap.exists()) {
             const userData = userSnap.data();
+            console.log('MyAccountModal - User data:', userData);
+            console.log('MyAccountModal - Username:', userData.username);
+            
             if (userData.username) {
-              setUserLink(`https://www.ninepics.com/album/${userData.username}`);
+              const usernameUrl = `https://www.ninepics.com/album/${userData.username}`;
+              console.log('MyAccountModal - Using username URL:', usernameUrl);
+              setUserLink(usernameUrl);
               setDisplayLink(`ninepics.com/album/${userData.username}`);
             } else {
-              setUserLink(`https://www.ninepics.com/album/${uid}`);
+              const uidUrl = `https://www.ninepics.com/album/${uid}`;
+              console.log('MyAccountModal - Using UID URL:', uidUrl);
+              setUserLink(uidUrl);
               setDisplayLink(`ninepics.com/album/${uid}`);
             }
           } else {
-            setUserLink(`https://www.ninepics.com/album/${uid}`);
+            const uidUrl = `https://www.ninepics.com/album/${uid}`;
+            console.log('MyAccountModal - User not found, using UID URL:', uidUrl);
+            setUserLink(uidUrl);
             setDisplayLink(`ninepics.com/album/${uid}`);
           }
         } catch (error) {
           console.error('Error getting user link:', error);
-          setUserLink(`https://www.ninepics.com/album/${uid}`);
+          const uidUrl = `https://www.ninepics.com/album/${uid}`;
+          console.log('MyAccountModal - Error, using UID URL:', uidUrl);
+          setUserLink(uidUrl);
           setDisplayLink(`ninepics.com/album/${uid}`);
         }
       };

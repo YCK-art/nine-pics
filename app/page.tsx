@@ -391,13 +391,21 @@ export default function Home() {
       // 현재 사용자의 사용자명 가져오기
       const auth = getAuth()
       const currentUser = auth.currentUser
+      console.log('Current user:', currentUser?.uid)
+      
       if (currentUser) {
         const userRef = doc(db, 'users', currentUser.uid)
         const userSnap = await getDoc(userRef)
+        console.log('User exists:', userSnap.exists())
+        
         if (userSnap.exists()) {
           const userData = userSnap.data()
+          console.log('User data:', userData)
+          console.log('Username:', userData.username)
+          
           if (userData.username) {
             const shareUrl = `https://www.ninepics.com/album/${userData.username}`;
+            console.log('Using username URL:', shareUrl)
             navigator.clipboard.writeText(shareUrl)
             alert('앨범 링크가 클립보드에 복사되었습니다!')
             return
@@ -406,6 +414,7 @@ export default function Home() {
         
         // 사용자명이 없으면 UID 사용
         const shareUrl = `https://www.ninepics.com/album/${currentUser.uid}`;
+        console.log('Using UID URL:', shareUrl)
         navigator.clipboard.writeText(shareUrl)
         alert('앨범 링크가 클립보드에 복사되었습니다!')
       } else {
