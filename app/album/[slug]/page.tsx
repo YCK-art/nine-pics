@@ -7,10 +7,10 @@ import { getFirestore, doc, onSnapshot, getDoc, collection, getDocs, increment, 
 import { initializeApp, getApps } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
 import { useRouter } from 'next/navigation'
-import ViewsModal from '../components/ViewsModal'
-import Navbar from '../components/Navbar'
-import MyAccountModal from '../components/MyAccountModal'
-import SegmentedControl from '../components/SegmentedControl';
+import ViewsModal from '../../components/ViewsModal'
+import Navbar from '../../components/Navbar'
+import MyAccountModal from '../../components/MyAccountModal'
+import SegmentedControl from '../../components/SegmentedControl';
 import { useSwipeable } from 'react-swipeable';
 
 interface Photo {
