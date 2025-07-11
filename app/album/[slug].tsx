@@ -69,7 +69,7 @@ if (!getApps().length) {
 }
 const db = getFirestore()
 
-export default function UserAlbumPage({ params }: { params: { uid: string } }) {
+export default function UserAlbumPage({ params }: { params: { slug: string } }) {
   const router = useRouter()
   const [photos, setPhotos] = useState<Photo[]>([])
   const [viewCount, setViewCount] = useState(0)
@@ -92,6 +92,7 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
   // PC: 사진 확대 모달 상태
   const [enlargedPhoto, setEnlargedPhoto] = useState<Photo | null>(null);
   const [currentUserUid, setCurrentUserUid] = useState<string | null>(null);
+  const [albumUid, setAlbumUid] = useState<string | null>(null);
 
   // 모바일 여부 감지
   React.useEffect(() => {
@@ -124,43 +125,40 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
   }
   const unlockedSlots = getUnlockedSlots()
 
-  // 사용자명 확인 및 리다이렉션
+  // username/uid 판별 및 앨범 데이터 로드
   useEffect(() => {
-    const checkUsernameAndRedirect = async () => {
-      if (!params.uid) {
-        setError('UID가 없습니다')
-        setIsLoading(false)
-        return
+    const resolveAndFetch = async () => {
+      if (!params.slug) {
+        setError('잘못된 접근입니다.');
+        setIsLoading(false);
+        return;
       }
-
       try {
-        // 사용자 정보 확인
-        const userRef = doc(db, 'users', params.uid)
-        const userSnap = await getDoc(userRef)
-        
-        if (userSnap.exists()) {
-          const userData = userSnap.data()
-          if (userData.username) {
-            // 사용자명이 있으면 사용자명 페이지로 리다이렉션
-            router.replace(`/album/${userData.username}`)
-            return
-          }
+        // 1. username으로 먼저 찾기
+        const q = query(collection(db, 'users'), where('username', '==', params.slug))
+        const querySnapshot = await getDocs(q)
+        if (!querySnapshot.empty) {
+          // username이 존재하면 해당 uid로 앨범 데이터 로드
+          const userDoc = querySnapshot.docs[0]
+          const userData = userDoc.data()
+          setAlbumUid(userData.uid)
+          await fetchAlbumData(userData.uid)
+          return;
         }
-        
-        // 사용자명이 없으면 기존 로직 계속
-        await fetchAlbumData()
+        // 2. username이 아니면 uid로 간주
+        setAlbumUid(params.slug)
+        await fetchAlbumData(params.slug)
       } catch (error) {
-        console.error('Error checking username:', error)
-        // 오류가 발생해도 기존 로직 계속
-        await fetchAlbumData()
+        setError('앨범 정보를 불러오는 중 오류가 발생했습니다.');
+        setIsLoading(false);
       }
     }
-
-    checkUsernameAndRedirect()
-  }, [params.uid, router])
+    resolveAndFetch()
+  }, [params.slug])
 
   // 전체 사용자 통계 가져오기
   useEffect(() => {
+    if (!albumUid) return;
     const unsubscribe = onSnapshot(collection(db, 'users'), (usersSnapshot) => {
       const users = usersSnapshot.docs.map(doc => doc.data())
       setTotalUsers(users.length)
@@ -188,7 +186,7 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
       })
       
       // 현재 앨범 주인의 순위 찾기 (params.uid로 찾기)
-      const currentAlbumOwnerRank = sortedUsers.findIndex(u => u.uid === params.uid) + 1
+      const currentAlbumOwnerRank = sortedUsers.findIndex(u => u.uid === albumUid) + 1
       console.log('Debug - Rank calculation:', { 
         totalUsers: users.length, 
         albumOwnerViews: albumMeta.totalViews,
@@ -198,7 +196,7 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
       setUserPercentile(currentAlbumOwnerRank)
     })
     return () => unsubscribe()
-  }, [unlockedSlots, params.uid, albumMeta.totalViews])
+  }, [unlockedSlots, albumUid, albumMeta.totalViews])
 
   // 현재 로그인한 유저의 uid 가져오기
   useEffect(() => {
@@ -211,21 +209,21 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
   }, []);
 
   // Firestore에서 앨범 데이터 구독
-  const fetchAlbumData = async () => {
-    if (!params.uid) {
+  const fetchAlbumData = async (uid: string) => {
+    if (!uid) {
       setError('UID가 없습니다')
       setIsLoading(false)
       return
     }
 
-    console.log('Fetching album for UID:', params.uid)
+    console.log('Fetching album for UID:', uid)
     
     // 여러 가능한 문서 ID를 시도
     const possibleIds = [
-      `user-${params.uid}`,
-      params.uid,
-      `album-${params.uid}`,
-      `ninepics-${params.uid}`
+      `user-${uid}`,
+      uid,
+      `album-${uid}`,
+      `ninepics-${uid}`
     ]
 
     let unsubscribe: (() => void) | null = null
@@ -376,7 +374,7 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <Navbar onUserChanged={() => {}} albumUid={params.uid} />
+      <Navbar onUserChanged={() => {}} albumUid={albumUid || ''} />
       
       {/* PC 버전 */}
       {!isMobile && (
@@ -542,7 +540,7 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
           email={currentUserUid || ''}
           onClose={() => setShowAccount(false)}
           onLogout={() => {}}
-          albumUid={params.uid}
+          albumUid={albumUid || ''}
         />
       )}
       
