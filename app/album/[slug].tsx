@@ -134,21 +134,29 @@ export default function UserAlbumPage({ params }: { params: { slug: string } }) 
         return;
       }
       try {
+        console.log('Debug - Resolving slug:', params.slug);
+        
         // 1. username으로 먼저 찾기
         const q = query(collection(db, 'users'), where('username', '==', params.slug))
         const querySnapshot = await getDocs(q)
+        console.log('Debug - Username query result:', querySnapshot.empty ? 'No user found' : 'User found');
+        
         if (!querySnapshot.empty) {
           // username이 존재하면 해당 uid로 앨범 데이터 로드
           const userDoc = querySnapshot.docs[0]
           const userData = userDoc.data()
+          console.log('Debug - Found user data:', userData);
           setAlbumUid(userData.uid)
           await fetchAlbumData(userData.uid)
           return;
         }
+        
+        console.log('Debug - No username found, treating as UID');
         // 2. username이 아니면 uid로 간주
         setAlbumUid(params.slug)
         await fetchAlbumData(params.slug)
       } catch (error) {
+        console.error('Debug - Error in resolveAndFetch:', error);
         setError('앨범 정보를 불러오는 중 오류가 발생했습니다.');
         setIsLoading(false);
       }
@@ -239,11 +247,13 @@ export default function UserAlbumPage({ params }: { params: { slug: string } }) 
           if (albumSnap.exists()) {
             foundAlbumId = albumId
             console.log('Found album with ID:', albumId)
+            console.log('Album data:', albumSnap.data())
             
             // 실시간 구독 설정
             unsubscribe = onSnapshot(albumRef, (doc) => {
               if (doc.exists()) {
                 const data = doc.data()
+                console.log('Real-time album data:', data)
                 setPhotos(data.photos || [])
                 setViewCount(data.viewCount || 0)
                 setAlbumMeta({
@@ -254,6 +264,8 @@ export default function UserAlbumPage({ params }: { params: { slug: string } }) 
               }
             })
             break
+          } else {
+            console.log('Album not found with ID:', albumId)
           }
         } catch (error) {
           console.log('Error trying album ID:', albumId, error)
@@ -261,7 +273,7 @@ export default function UserAlbumPage({ params }: { params: { slug: string } }) 
       }
       
       if (!foundAlbumId) {
-        console.log('No album found for any ID')
+        console.log('No album found for any ID. Tried:', possibleIds)
         setError('앨범을 찾을 수 없습니다')
         setIsLoading(false)
       }
