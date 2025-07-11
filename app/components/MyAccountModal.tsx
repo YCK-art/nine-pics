@@ -9,14 +9,15 @@ export default function MyAccountModal({ email, onClose, onLogout, albumUid }: {
   const [copied, setCopied] = useState(false)
   const [showSignUp, setShowSignUp] = useState(false)
   const [modalType, setModalType] = useState<'signup' | 'login'>('signup')
-  let userLink = '';
-  let displayLink = '';
-  let isOwner = true;
-  if (typeof window !== 'undefined') {
+  const [userLink, setUserLink] = useState('')
+  const [displayLink, setDisplayLink] = useState('')
+  const [isOwner, setIsOwner] = useState(true)
+
+  React.useEffect(() => {
     const auth = getAuth();
     const uid = auth.currentUser?.uid;
     if (albumUid && uid && albumUid !== uid) {
-      isOwner = false;
+      setIsOwner(false);
     }
     if (uid) {
       // 사용자명으로 링크 생성 시도
@@ -29,31 +30,25 @@ export default function MyAccountModal({ email, onClose, onLogout, albumUid }: {
           if (userSnap.exists()) {
             const userData = userSnap.data();
             if (userData.username) {
-              userLink = `https://www.ninepics.com/album/${userData.username}`;
-              displayLink = `ninepics.com/album/${userData.username}`;
+              setUserLink(`https://www.ninepics.com/album/${userData.username}`);
+              setDisplayLink(`ninepics.com/album/${userData.username}`);
             } else {
-              userLink = `https://www.ninepics.com/album/${uid}`;
-              displayLink = `ninepics.com/album/${uid}`;
+              setUserLink(`https://www.ninepics.com/album/${uid}`);
+              setDisplayLink(`ninepics.com/album/${uid}`);
             }
           } else {
-            userLink = `https://www.ninepics.com/album/${uid}`;
-            displayLink = `ninepics.com/album/${uid}`;
-          }
-          if (displayLink.length > 18) {
-            displayLink = displayLink.substring(0, 18) + '...';
+            setUserLink(`https://www.ninepics.com/album/${uid}`);
+            setDisplayLink(`ninepics.com/album/${uid}`);
           }
         } catch (error) {
           console.error('Error getting user link:', error);
-          userLink = `https://www.ninepics.com/album/${uid}`;
-          displayLink = `ninepics.com/album/${uid}`;
-          if (displayLink.length > 18) {
-            displayLink = displayLink.substring(0, 18) + '...';
-          }
+          setUserLink(`https://www.ninepics.com/album/${uid}`);
+          setDisplayLink(`ninepics.com/album/${uid}`);
         }
       };
       getUserLink();
     }
-  }
+  }, [albumUid])
 
   const handleCopy = () => {
     if (userLink) {
