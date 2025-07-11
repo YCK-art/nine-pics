@@ -386,11 +386,34 @@ export default function Home() {
     setPhotos(prev => prev.filter(photo => photo.id !== photoId))
   }
 
-  const shareAlbum = () => {
+  const shareAlbum = async () => {
     if (albumId) {
-      const shareUrl = `https://www.ninepics.com/album/${albumId}`;
-      navigator.clipboard.writeText(shareUrl)
-      alert('앨범 링크가 클립보드에 복사되었습니다!')
+      try {
+        // 현재 사용자의 사용자명 가져오기
+        const auth = getAuth()
+        const currentUser = auth.currentUser
+        if (currentUser) {
+          const userRef = doc(db, 'users', currentUser.uid)
+          const userSnap = await getDoc(userRef)
+          if (userSnap.exists()) {
+            const userData = userSnap.data()
+            if (userData.username) {
+              const shareUrl = `https://www.ninepics.com/album/${userData.username}`;
+              navigator.clipboard.writeText(shareUrl)
+              alert('앨범 링크가 클립보드에 복사되었습니다!')
+              return
+            }
+          }
+        }
+        
+        // 사용자명이 없으면 기존 UID 사용
+        const shareUrl = `https://www.ninepics.com/album/${albumId}`;
+        navigator.clipboard.writeText(shareUrl)
+        alert('앨범 링크가 클립보드에 복사되었습니다!')
+      } catch (error) {
+        console.error('Error sharing album:', error)
+        alert('링크 복사 중 오류가 발생했습니다.')
+      }
     }
   }
 

@@ -6,7 +6,6 @@ import Image from 'next/image'
 import { getFirestore, doc, onSnapshot, getDoc, collection, getDocs, increment, updateDoc, setDoc, query, where } from 'firebase/firestore'
 import { initializeApp, getApps } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
-import { useRouter } from 'next/navigation'
 import ViewsModal from '../../components/ViewsModal'
 import Navbar from '../../components/Navbar'
 import MyAccountModal from '../../components/MyAccountModal'
@@ -69,8 +68,7 @@ if (!getApps().length) {
 }
 const db = getFirestore()
 
-export default function UserAlbumPage({ params }: { params: { uid: string } }) {
-  const router = useRouter()
+export default function UserAlbumPage({ params }: { params: { username: string } }) {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [viewCount, setViewCount] = useState(0)
   const [albumMeta, setAlbumMeta] = useState<{ totalViews: number, createdAt: string | null }>({ totalViews: 0, createdAt: null })
@@ -89,9 +87,9 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
   });
   const [cardIndex, setCardIndex] = React.useState(0);
   const [shakeIndex, setShakeIndex] = useState<number|null>(null);
-  // PC: 사진 확대 모달 상태
   const [enlargedPhoto, setEnlargedPhoto] = useState<Photo | null>(null);
   const [currentUserUid, setCurrentUserUid] = useState<string | null>(null);
+  const [userUid, setUserUid] = useState<string | null>(null);
 
   // 모바일 여부 감지
   React.useEffect(() => {
@@ -124,108 +122,51 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
   }
   const unlockedSlots = getUnlockedSlots()
 
-  // 사용자명 확인 및 리다이렉션
+  // 사용자명으로 UID 찾기
   useEffect(() => {
-    const checkUsernameAndRedirect = async () => {
-      if (!params.uid) {
-        setError('UID가 없습니다')
+    const findUserByUsername = async () => {
+      if (!params.username) {
+        setError('사용자명이 없습니다')
         setIsLoading(false)
         return
       }
 
       try {
-        // 사용자 정보 확인
-        const userRef = doc(db, 'users', params.uid)
-        const userSnap = await getDoc(userRef)
+        const q = query(collection(db, 'users'), where('username', '==', params.username))
+        const querySnapshot = await getDocs(q)
         
-        if (userSnap.exists()) {
-          const userData = userSnap.data()
-          if (userData.username) {
-            // 사용자명이 있으면 사용자명 페이지로 리다이렉션
-            router.replace(`/album/${userData.username}`)
-            return
-          }
+        if (querySnapshot.empty) {
+          setError('사용자를 찾을 수 없습니다')
+          setIsLoading(false)
+          return
         }
+
+        const userDoc = querySnapshot.docs[0]
+        const userData = userDoc.data()
+        setUserUid(userData.uid)
         
-        // 사용자명이 없으면 기존 로직 계속
-        await fetchAlbumData()
+        // UID를 찾았으므로 기존 로직으로 앨범 데이터 가져오기
+        await fetchAlbumData(userData.uid)
       } catch (error) {
-        console.error('Error checking username:', error)
-        // 오류가 발생해도 기존 로직 계속
-        await fetchAlbumData()
+        console.error('Error finding user:', error)
+        setError('사용자를 찾는 중 오류가 발생했습니다')
+        setIsLoading(false)
       }
     }
 
-    checkUsernameAndRedirect()
-  }, [params.uid, router])
+    findUserByUsername()
+  }, [params.username])
 
-  // 전체 사용자 통계 가져오기
-  useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'users'), (usersSnapshot) => {
-      const users = usersSnapshot.docs.map(doc => doc.data())
-      setTotalUsers(users.length)
-      
-      // 디버깅: 현재 unlocked 슬롯 수와 사용자 데이터 확인
-      console.log('Debug - Current unlocked slots:', unlockedSlots)
-      console.log('Debug - Users data:', users)
-      
-      // 현재 앨범 주인의 unlocked 슬롯 수에 맞춰서 계산
-      const currentUnlockedSlots = unlockedSlots
-      const usersAtCurrentSlot = users.filter(u => {
-        const userSlotLevel = Number(u.slotLevel || 1)
-        return userSlotLevel === currentUnlockedSlots
-      }).length
-      setUsersAt1Slot(usersAtCurrentSlot)
-      
-      // 조회수 기반 순위 계산 (현재 앨범 주인 기준)
-      const currentAlbumOwnerSlotLevel = unlockedSlots
-      
-      // 조회수 기준으로 정렬 (높은 순서대로)
-      const sortedUsers = users.sort((a, b) => {
-        const aViews = Number(a.totalViews || a.viewCount || 0)
-        const bViews = Number(b.totalViews || b.viewCount || 0)
-        return bViews - aViews
-      })
-      
-      // 현재 앨범 주인의 순위 찾기 (params.uid로 찾기)
-      const currentAlbumOwnerRank = sortedUsers.findIndex(u => u.uid === params.uid) + 1
-      console.log('Debug - Rank calculation:', { 
-        totalUsers: users.length, 
-        albumOwnerViews: albumMeta.totalViews,
-        rank: currentAlbumOwnerRank 
-      })
-      
-      setUserPercentile(currentAlbumOwnerRank)
-    })
-    return () => unsubscribe()
-  }, [unlockedSlots, params.uid, albumMeta.totalViews])
-
-  // 현재 로그인한 유저의 uid 가져오기
-  useEffect(() => {
-    try {
-      const auth = getAuth();
-      setCurrentUserUid(auth.currentUser?.uid || null);
-    } catch (e) {
-      setCurrentUserUid(null);
-    }
-  }, []);
-
-  // Firestore에서 앨범 데이터 구독
-  const fetchAlbumData = async () => {
-    if (!params.uid) {
-      setError('UID가 없습니다')
-      setIsLoading(false)
-      return
-    }
-
-    console.log('Fetching album for UID:', params.uid)
+  // 앨범 데이터 가져오기
+  const fetchAlbumData = async (uid: string) => {
+    console.log('Fetching album for UID:', uid)
     
     // 여러 가능한 문서 ID를 시도
     const possibleIds = [
-      `user-${params.uid}`,
-      params.uid,
-      `album-${params.uid}`,
-      `ninepics-${params.uid}`
+      `user-${uid}`,
+      uid,
+      `album-${uid}`,
+      `ninepics-${uid}`
     ]
 
     let unsubscribe: (() => void) | null = null
@@ -271,6 +212,45 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
 
     await tryFetchAlbum()
   }
+
+  // 전체 사용자 통계 가져오기
+  useEffect(() => {
+    if (!userUid) return
+
+    const unsubscribe = onSnapshot(collection(db, 'users'), (usersSnapshot) => {
+      const users = usersSnapshot.docs.map(doc => doc.data())
+      setTotalUsers(users.length)
+      
+      const currentUnlockedSlots = unlockedSlots
+      const usersAtCurrentSlot = users.filter(u => {
+        const userSlotLevel = Number(u.slotLevel || 1)
+        return userSlotLevel === currentUnlockedSlots
+      }).length
+      setUsersAt1Slot(usersAtCurrentSlot)
+      
+      // 조회수 기준으로 정렬 (높은 순서대로)
+      const sortedUsers = users.sort((a, b) => {
+        const aViews = Number(a.totalViews || a.viewCount || 0)
+        const bViews = Number(b.totalViews || b.viewCount || 0)
+        return bViews - aViews
+      })
+      
+      // 현재 앨범 주인의 순위 찾기
+      const currentAlbumOwnerRank = sortedUsers.findIndex(u => u.uid === userUid) + 1
+      setUserPercentile(currentAlbumOwnerRank)
+    })
+    return () => unsubscribe()
+  }, [unlockedSlots, userUid, albumMeta.totalViews])
+
+  // 현재 로그인한 유저의 uid 가져오기
+  useEffect(() => {
+    try {
+      const auth = getAuth();
+      setCurrentUserUid(auth.currentUser?.uid || null);
+    } catch (e) {
+      setCurrentUserUid(null);
+    }
+  }, []);
 
   // 조회수 증가 로직
   const checkUniqueVisitor = async (albumId: string) => {
@@ -376,7 +356,7 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <Navbar onUserChanged={() => {}} albumUid={params.uid} />
+      <Navbar onUserChanged={() => {}} albumUid={userUid || undefined} />
       
       {/* PC 버전 */}
       {!isMobile && (
@@ -542,7 +522,7 @@ export default function UserAlbumPage({ params }: { params: { uid: string } }) {
           email={currentUserUid || ''}
           onClose={() => setShowAccount(false)}
           onLogout={() => {}}
-          albumUid={params.uid}
+          albumUid={userUid || undefined}
         />
       )}
       

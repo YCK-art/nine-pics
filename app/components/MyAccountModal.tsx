@@ -19,11 +19,39 @@ export default function MyAccountModal({ email, onClose, onLogout, albumUid }: {
       isOwner = false;
     }
     if (uid) {
-      userLink = `https://www.ninepics.com/album/${uid}`;
-      displayLink = `ninepics.com/album/${uid}`;
-      if (displayLink.length > 18) {
-        displayLink = displayLink.substring(0, 18) + '...';
-      }
+      // 사용자명으로 링크 생성 시도
+      const getUserLink = async () => {
+        try {
+          const { getFirestore, doc, getDoc } = await import('firebase/firestore');
+          const db = getFirestore();
+          const userRef = doc(db, 'users', uid);
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            if (userData.username) {
+              userLink = `https://www.ninepics.com/album/${userData.username}`;
+              displayLink = `ninepics.com/album/${userData.username}`;
+            } else {
+              userLink = `https://www.ninepics.com/album/${uid}`;
+              displayLink = `ninepics.com/album/${uid}`;
+            }
+          } else {
+            userLink = `https://www.ninepics.com/album/${uid}`;
+            displayLink = `ninepics.com/album/${uid}`;
+          }
+          if (displayLink.length > 18) {
+            displayLink = displayLink.substring(0, 18) + '...';
+          }
+        } catch (error) {
+          console.error('Error getting user link:', error);
+          userLink = `https://www.ninepics.com/album/${uid}`;
+          displayLink = `ninepics.com/album/${uid}`;
+          if (displayLink.length > 18) {
+            displayLink = displayLink.substring(0, 18) + '...';
+          }
+        }
+      };
+      getUserLink();
     }
   }
 
